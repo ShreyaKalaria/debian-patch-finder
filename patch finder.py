@@ -69,9 +69,13 @@ def bugzilla_patcher(bug_url):
         return
     for head in patch_check:
         if head.text == 'Patches':
-            active_patch = head.find('a')
-            if active_patch.text != 'Add a Patch':
-                plink = active_patch.get('href')
+            act_patch = head.find_next_sibling().find('a')
+            try:
+                active_patch = act_patch.text
+            except AttributeError:
+                return
+            if active_patch != 'Add a Patch':
+                plink = act_patch.get('href')
                 patch_link = urljoin(browser.get_url(), plink)
                 patchoo = [bug_url[0], patch_link]
                 patch_links.append(tuple(patchoo))
