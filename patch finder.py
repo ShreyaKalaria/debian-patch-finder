@@ -9,7 +9,8 @@ from urllib.parse import urljoin,urlsplit
 
 def github_issue_patcher(issue_url):
     global browser
-    browser.open(issue_url)
+    global patch_links
+    browser.open(issue_url[1])
     if browser.get_current_page().find('div', {"class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find('span', {"class": "State State--red"}) is not None:
         try:
             issue = browser.get_current_page().find_all("div", {"class": "timeline-commits"})
@@ -22,11 +23,28 @@ def github_issue_patcher(issue_url):
                 continue
             else:
                 # patches.append(entry.find('a', {"class": "commit-id"}).get('href'))
-                print(commit.find('a', {"class": "commit-id"}).get('href'))
-                doo = urljoin(issue_url, commit.find('a', {"class": "commit-id"}).get('href'))
-                wget.download(doo + '.diff', out='/tmp/')
+                #print(commit.find('a', {"class": "commit-id"}).get('href'))
+                doo = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
+                patchoo = [issue_url[0],doo + '.diff']
+                patch_links.append(tuple(patchoo))
+    return
 
 
+def gitpage_patcher(issue_url):
+    global browser
+    global patch_links
+    browser.open(issue_url[1])
+    page_links = browser.get_current_page().find_all('a')
+    for link in page_links:
+        if link.text == 'patch':
+            patch_link = urljoin(issue_url[1],link.get('href'))
+            patchoo = [issue_url[0],patch_link]
+            patch_links.append(tuple(patchoo))
+        else:
+            continue
+    return
+
+patch_links = []
 if not (os.path.exists('/tmp/cve_list')):
     url = "https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list"
     cve_list_file = wget.download(url, out='/tmp/cve_list')
@@ -83,13 +101,34 @@ for entry in vuln_codes:
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if 'github.com' in check_link[1] and 'issues' in check_link[2]:
-                                github_issue_patcher(link.get('href'))
+                                sadoo = [entry,link.get('href')]
+                                github_issue_patcher(tuple(sadoo))
+                            elif 'git.' in check_link[1][:4]:
+                                sadoo = [entry, link.get('href')]
+                                gitpage_patcher(tuple(sadoo))
+                            elif 'commit' in check_link[2]:
+                                sadoo = [entry, link.get('href') + '.diff']
+                                patch_links.append(tuple(sadoo))
                     output = 1
 
     if output == 0:
        # print("No info on package vulnerability status")
         pass
     # a = input()
+browser.close()
+patches = list(set(patch_links))
+print(len(patches))
+hsdgoh = input("Press any key to start downloading")
+for patch in patches:
+    #if patch[1][-6:] == '.patch':
+   #     print(patch[0] + ' - ' + patch[1][-14:])
+   #     wget.download(patch[1], out='/tmp/' + patch[0] + ' - ' + patch[1][-14:])
+    if patch[1][-5:] == '.diff':
+        print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+        wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+    else:
+        print(patch[0] + ' - ' + patch[1][-8:] + '.patch')
+        wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0]+' - ' + patch[1][-8:] + '.patch')
 
 
 
