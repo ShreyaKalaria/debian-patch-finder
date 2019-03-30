@@ -100,8 +100,8 @@ for entry in vuln_codes:
                         #print(entry + '\n')
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
-                            if 'github.com' in check_link[1] and 'issues' in check_link[2]:
-                                sadoo = [entry,link.get('href')]
+                            if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
+                                sadoo = [entry, link.get('href')]
                                 github_issue_patcher(tuple(sadoo))
                             elif 'git.' in check_link[1][:4]:
                                 sadoo = [entry, link.get('href')]
@@ -109,6 +109,10 @@ for entry in vuln_codes:
                             elif 'commit' in check_link[2]:
                                 sadoo = [entry, link.get('href') + '.diff']
                                 patch_links.append(tuple(sadoo))
+                            elif 'bugs.' in check_link[1][:5]:
+                                pass
+                            else:
+                                pass
                     output = 1
 
     if output == 0:
