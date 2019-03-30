@@ -49,6 +49,8 @@ def gitlab_commit_patcher(commit_url):
     global browser
     global patch_links
     browser.open(commit_url[1])
+   # print('gitlab')
+   # print(browser.get_current_page().find('a', {"class": "ci-status-icon-success"}))
     if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
         patchoo = [commit_url[0], browser.get_url() + '.diff']
         patch_links.append(tuple(patchoo))
@@ -62,11 +64,27 @@ def bugzilla_patcher(bug_url):
     global patch_links
     browser.open(bug_url[1])
     try:
-        patch_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
+        patch_check = browser.get_current_page().find_all('h2')
     except TypeError:
         return
-    if patch_check is not None:
-        plink = patch_check.find('a').get('href')
+    for head in patch_check:
+        if head.text == 'Patches':
+            active_patch = head.find('a')
+            if active_patch.text != 'Add a Patch':
+                plink = active_patch.get('href')
+                patch_link = urljoin(browser.get_url(), plink)
+                patchoo = [bug_url[0], patch_link]
+                patch_links.append(tuple(patchoo))
+                return
+
+    try:
+        attach_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
+    except TypeError:
+        return
+    #print('bugzilla' + '\n' + browser.get_url())
+    #print(attach_check)
+    if attach_check is not None:
+        plink = attach_check.find('a').get('href')
         patch_link = urljoin(browser.get_url(), plink)
         patchoo = [bug_url[0], patch_link]
         patch_links.append(tuple(patchoo))
@@ -127,7 +145,7 @@ for entry in vuln_codes:
                             noted_links = vuln_notes.find_all('a')
                         except (TypeError, AttributeError) as errors:
                             continue
-                        #print(entry + '\n')
+                        # print(entry + '\n')
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
@@ -156,6 +174,7 @@ for entry in vuln_codes:
 browser.close()
 patches = list(set(patch_links))
 print(len(patches))
+print(len(fixed_from_source))
 confirm_download = input("Press any key to start downloading")
 for patch in patches:
     if patch[1][-6:] == '.patch':
