@@ -4,7 +4,7 @@ from itertools import islice
 import wget
 import mechanicalsoup
 import os.path
-from urllib.parse import urljoin,urlsplit
+from urllib.parse import urljoin, urlsplit
 
 
 def github_issue_patcher(issue_url):
@@ -25,7 +25,7 @@ def github_issue_patcher(issue_url):
                 # patches.append(entry.find('a', {"class": "commit-id"}).get('href'))
                 #print(commit.find('a', {"class": "commit-id"}).get('href'))
                 doo = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
-                patchoo = [issue_url[0],doo + '.diff']
+                patchoo = [issue_url[0], doo + '.diff']
                 patch_links.append(tuple(patchoo))
     return
 
@@ -37,12 +37,42 @@ def gitpage_patcher(issue_url):
     page_links = browser.get_current_page().find_all('a')
     for link in page_links:
         if link.text == 'patch':
-            patch_link = urljoin(issue_url[1],link.get('href'))
-            patchoo = [issue_url[0],patch_link]
+            patch_link = urljoin(issue_url[1], link.get('href'))
+            patchoo = [issue_url[0], patch_link]
             patch_links.append(tuple(patchoo))
         else:
             continue
     return
+
+
+def gitlab_commit_patcher(commit_url):
+    global browser
+    global patch_links
+    browser.open(commit_url[1])
+    if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
+        patchoo = [commit_url[0], browser.get_url() + '.diff']
+        patch_links.append(tuple(patchoo))
+    else:
+        pass
+    return
+
+
+def bugzilla_patcher(bug_url):
+    global browser
+    global patch_links
+    browser.open(bug_url[1])
+    try:
+        patch_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
+    except TypeError:
+        return
+    if patch_check is not None:
+        plink = patch_check.find('a').get('href')
+        patch_link = urljoin(browser.get_url(), plink)
+        patchoo = [bug_url[0], patch_link]
+        patch_links.append(tuple(patchoo))
+    return
+
+
 
 patch_links = []
 if not (os.path.exists('/tmp/cve_list')):
@@ -103,14 +133,18 @@ for entry in vuln_codes:
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
                                 sadoo = [entry, link.get('href')]
                                 github_issue_patcher(tuple(sadoo))
+                            elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
+                                sadoo = [entry, link.get('href') + '.diff']
+                                patch_links.append(tuple(sadoo))
+                            elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
+                                sadoo = [entry, link.get('href')]
+                                gitlab_commit_patcher(tuple(sadoo))
                             elif 'git.' in check_link[1][:4]:
                                 sadoo = [entry, link.get('href')]
                                 gitpage_patcher(tuple(sadoo))
-                            elif 'commit' in check_link[2]:
-                                sadoo = [entry, link.get('href') + '.diff']
-                                patch_links.append(tuple(sadoo))
                             elif 'bugs.' in check_link[1][:5]:
-                                pass
+                                sadoo = [entry, link.get('href')]
+                                bugzilla_patcher(tuple(sadoo))
                             else:
                                 pass
                     output = 1
@@ -131,7 +165,7 @@ for patch in patches:
         print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
         wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
     else:
-        print(patch[0] + ' - ' + patch[1][-8:] + '.patch')
+        print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
         wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0]+' - ' + patch[1][-8:] + '.patch')
 
 
