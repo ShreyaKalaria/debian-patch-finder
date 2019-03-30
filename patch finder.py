@@ -118,12 +118,12 @@ for entry in vuln_codes:
 browser.close()
 patches = list(set(patch_links))
 print(len(patches))
-hsdgoh = input("Press any key to start downloading")
+confirm_download = input("Press any key to start downloading")
 for patch in patches:
-    #if patch[1][-6:] == '.patch':
-   #     print(patch[0] + ' - ' + patch[1][-14:])
-   #     wget.download(patch[1], out='/tmp/' + patch[0] + ' - ' + patch[1][-14:])
-    if patch[1][-5:] == '.diff':
+    if patch[1][-6:] == '.patch':
+        print(patch[0] + ' - ' + patch[1][-14:])
+        wget.download(patch[1], out='/tmp/' + patch[0] + ' - ' + patch[1][-14:])
+    elif patch[1][-5:] == '.diff':
         print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
         wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
     else:
