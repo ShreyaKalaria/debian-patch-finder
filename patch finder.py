@@ -5,7 +5,7 @@ import wget
 import mechanicalsoup
 import os
 from urllib.parse import urljoin, urlsplit
-# import sys
+import sys
 # import getopt
 
 
@@ -122,11 +122,11 @@ def retrieve_backtrack():
     find_last_entry.close()
     new_cve_list = open('/tmp/patch-finder/cve_list.new', 'r')
     updated_cve_list = open('/tmp/patch-finder/cve_list', 'w')
-    for line in new_cve_list:
-        if line.startswith(last_entry):
+    for file_line in new_cve_list:
+        if file_line.startswith(last_entry):
             return
         else:
-            updated_cve_list.write(line)
+            updated_cve_list.write(file_line)
     new_cve_list.close()
     os.remove('/tmp/patch-finder/cve_list.new')
     updated_cve_list.close()
@@ -163,6 +163,30 @@ def check_directories():
                     out='/tmp/patch-finder/cve_list')
     os.rmdir('/tmp/patch-finder/patches/')
     return
+
+
+def query_yes_no(question, default="yes"):
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
 
 
 vulnerabilities = []
@@ -280,10 +304,19 @@ for cve in vulnerabilities:
         not_patched.append(package_name + ' - ' + 'No patch found')
         pass
 
+unpatched_report = open('/tmp/patch-finder/patches/unpatched_report.txt', 'w')
+for entry in not_patched:
+    unpatched_report.write(entry + '\n')
+unpatched_report.close()
+
 browser.close()
 patch_list = list(set(patch_links))  # remove duplicate patches
-confirm_download = input("Press any key to start downloading")
-
-download_patches(patch_list)
-
+print("Found " + str(len(patch_list)) + " patches available." + '\n')
+confirm_download = query_yes_no('Download patches?')
+if confirm_download:
+    download_patches(patch_list)
+    print("Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
+else:
+    os.remove('/tmp/patch-finder/last_cve_entry.txt')
+print('Exiting...' + '\n')
 exit()
