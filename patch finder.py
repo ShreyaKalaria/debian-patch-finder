@@ -22,8 +22,6 @@ def github_issue_patcher(issue_url):
             if sad is None:
                 continue
             else:
-                # patches.append(entry.find('a', {"class": "commit-id"}).get('href'))
-                #print(commit.find('a', {"class": "commit-id"}).get('href'))
                 doo = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
                 patchoo = [issue_url[0], doo + '.diff']
                 patch_links.append(tuple(patchoo))
@@ -49,8 +47,6 @@ def gitlab_commit_patcher(commit_url):
     global browser
     global patch_links
     browser.open(commit_url[1])
-   # print('gitlab')
-   # print(browser.get_current_page().find('a', {"class": "ci-status-icon-success"}))
     if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
         patchoo = [commit_url[0], browser.get_url() + '.diff']
         patch_links.append(tuple(patchoo))
@@ -80,7 +76,6 @@ def bugzilla_patcher(bug_url):
                 patchoo = [bug_url[0], patch_link]
                 patch_links.append(tuple(patchoo))
                 return
-
     try:
         attach_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
     except TypeError:
@@ -119,7 +114,8 @@ for line in cve_list:
 vuln_codes = list(set(vulns))
 fixed_from_source = []
 browser = mechanicalsoup.StatefulBrowser()
-
+print(len(vuln_codes))
+holes = 0
 for entry in vuln_codes:
     url = "https://security-tracker.debian.org/tracker/" + entry
     browser.open(url)
@@ -128,7 +124,7 @@ for entry in vuln_codes:
     except IndexError:
        # print("No info on package vulnerability status")
         continue
-
+    holes = holes + 1
     source = (((vuln_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vuln_status:
@@ -149,6 +145,7 @@ for entry in vuln_codes:
                             noted_links = vuln_notes.find_all('a')
                         except (TypeError, AttributeError) as errors:
                             continue
+
                         # print(entry + '\n')
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
@@ -179,6 +176,7 @@ browser.close()
 patches = list(set(patch_links))
 print(len(patches))
 print(len(fixed_from_source))
+print(holes)
 confirm_download = input("Press any key to start downloading")
 for patch in patches:
     if patch[1][-6:] == '.patch':
