@@ -113,7 +113,6 @@ vuln_codes = list(set(vulns))
 fixed_from_source = []
 browser = mechanicalsoup.StatefulBrowser()
 print(len(vuln_codes))
-holes = 0
 for entry in vuln_codes:
     url = "https://security-tracker.debian.org/tracker/" + entry
     browser.open(url)
@@ -122,7 +121,6 @@ for entry in vuln_codes:
     except IndexError:
        # print("No info on package vulnerability status")
         continue
-    holes = holes + 1
     source = (((vuln_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vuln_status:
@@ -172,9 +170,6 @@ for entry in vuln_codes:
     # a = input()
 browser.close()
 patches = list(set(patch_links))
-print(len(patches))
-print(len(fixed_from_source))
-print(holes)
 confirm_download = input("Press any key to start downloading")
 for patch in patches:
     if patch[1][-6:] == '.patch':
