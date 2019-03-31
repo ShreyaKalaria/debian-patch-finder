@@ -87,6 +87,23 @@ def bugzilla_patcher(bug_url):
     return
 
 
+def download_patches(patches):
+    for patch in patches:
+        if patch[1][-6:] == '.patch':
+            print(patch[0] + ' - ' + patch[1][-14:])
+            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                        + patch[0] + ' - ' + patch[1][-14:])
+        elif patch[1][-5:] == '.diff':
+            print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                        + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+        else:
+            print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
+            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                        + patch[0] + ' - ' + patch[1][-8:] + '.patch')
+    return
+
+
 if not (os.path.exists('/tmp/patch-finder/')):
     os.mkdir('/tmp/patch-finder/')
     cve_list_file = wget.download(
@@ -164,8 +181,8 @@ for cve in vulnerabilities:
                                 candidate_link = [cve, link.get('href')]
                                 github_issue_patcher(tuple(candidate_link))
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
-                                patch = [cve, link.get('href') + '.diff']
-                                patch_links.append(tuple(patch))
+                                candidate_link = [cve, link.get('href') + '.diff']
+                                patch_links.append(tuple(candidate_link))
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
                                 candidate_link = [cve, link.get('href')]
                                 gitlab_commit_patcher(tuple(candidate_link))
@@ -184,21 +201,11 @@ for cve in vulnerabilities:
     if output == 0:
         not_patched.append(package_name + ' - ' + 'No patch found')
         pass
-    # a = input()
+
 browser.close()
-patches = list(set(patch_links))
+patch_list = list(set(patch_links))  # remove duplicate patches
 confirm_download = input("Press any key to start downloading")
-for patch in patches:
-    if patch[1][-6:] == '.patch':
-        print(patch[0] + ' - ' + patch[1][-14:])
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                    + patch[0]+' - ' + patch[1][-14:])
-    elif patch[1][-5:] == '.diff':
-        print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                    + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-    else:
-        print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                    + patch[0]+' - ' + patch[1][-8:] + '.patch')
+
+download_patches(patch_list)
+
 exit()
