@@ -103,8 +103,8 @@ else:
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
-vulnerabilities = []
-possible_vulnerabilities = []
+cve_entries_to_check = []
+possible_cve_entries = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
 query_str = 'CVE-'+year_vln
@@ -115,34 +115,39 @@ for line in cve_list:
         check = ''.join(islice(cve_list, 1))
         if all(flag not in check for flag in reject_entry):
             if any(flag in check for flag in recheck_entry):
-                possible_vulnerabilities.append(str(line.split(' ')[0]))
+                possible_cve_entries.append(str(line.split(' ')[0]))
             else:
-                vulnerabilities.append(str(line.split(' ')[0]))
+                cve_entries_to_check.append(str(line.split(' ')[0]))
 
-vulnerability_codes = list(set(vulnerabilities))
-fixed_from_source = []
-browser = mechanicalsoup.StatefulBrowser()
-print(len(vulnerability_codes))
-for entry in vulnerability_codes:
-    url = "https://security-tracker.debian.org/tracker/" + entry
+if len(possible_cve_entries) != 0:
+    future_checks = open('pending_checks.txt', 'w')
+    for entry in possible_cve_entries:
+        future_checks.write(str(entry) + '\n')
+    future_checks.close()
+
+vulnerabilities = list(set(cve_entries_to_check))  # remove duplicate cve entries
+
+fixed_from_source = []  # initialize fixed-from-source package list
+
+browser = mechanicalsoup.StatefulBrowser()  # initialize browser
+
+for cve in vulnerabilities:
+    url = "https://security-tracker.debian.org/tracker/" + cve
     browser.open(url)
     try:
-        vuln_status = browser.get_current_page().find_all("table")[1]
+        vulnerability_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
         # print("No info on package vulnerability status")
         continue
-    source = (((vuln_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
+    source = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
-    for row in vuln_status:
+    for row in vulnerability_status:
         columns = row.select('td')
         parsed_array = []
         for column in columns:
             parsed_array.append(column.text)
         if len(parsed_array) == 4:
                 if distribution in parsed_array[1]:
-                    '''print("Source package " + source + " (version " + parsed_array[2] + ")" + " is " + parsed_array[3
-                    ]+ " (" + entry + ")" + " in " + parsed_array[1])
-                    '''
                     if parsed_array[3] == 'fixed':
                         fixed_from_source.append(str(source) + ' - ' + str(parsed_array[2]))
                     else:
@@ -151,8 +156,6 @@ for entry in vulnerability_codes:
                             noted_links = vuln_notes.find_all('a')
                         except (TypeError, AttributeError) as errors:
                             continue
-
-                        # print(entry + '\n')
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
@@ -173,6 +176,8 @@ for entry in vulnerability_codes:
                             else:
                                 pass
                     output = 1
+                else:
+                    continue
 
     if output == 0:
         # print("No info on package vulnerability status")
