@@ -87,7 +87,7 @@ def bugzilla_patcher(bug_url):
     return
 
 
-patch_links = []
+
 
 if not (os.path.exists('/tmp/patch-finder/')):
     os.mkdir('/tmp/patch-finder/')
@@ -128,7 +128,8 @@ if len(possible_cve_entries) != 0:
 vulnerabilities = list(set(cve_entries_to_check))  # remove duplicate cve entries
 
 fixed_from_source = []  # initialize fixed-from-source package list
-
+not_patched = []
+patch_links = []
 browser = mechanicalsoup.StatefulBrowser()  # initialize browser
 
 for cve in vulnerabilities:
@@ -137,45 +138,45 @@ for cve in vulnerabilities:
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
-        # print("No info on package vulnerability status")
+        not_patched.append(cve + ' - ' + 'No info found for CVE entry')
         continue
     package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vulnerability_status:
         columns = row.select('td')
-        parsed_array = []
+        status_entry = []
         for column in columns:
-            parsed_array.append(column.text)
-        if len(parsed_array) == 4:
-                if distribution in parsed_array[1]:
+            status_entry.append(column.text)
+        if len(status_entry) == 4:
+                if distribution in status_entry[1]:
                     '''print("Source package " + source + " (version " + parsed_array[2] + ")" + " is " + parsed_array[3
                     ]+ " (" + entry + ")" + " in " + parsed_array[1])
                     '''
-                    if parsed_array[3] == 'fixed':
-                        fixed_from_source.append(str(package_name) + ' - ' + str(parsed_array[2]))
+                    if status_entry[3] == 'fixed':
+                        fixed_from_source.append(str(package_name) + ' - ' + str(status_entry[2]))
                     else:
                         try:
-                            vuln_notes = browser.get_current_page().find('pre')
-                            noted_links = vuln_notes.find_all('a')
+                            entry_notes = browser.get_current_page().find('pre')
+                            noted_links = entry_notes.find_all('a')
                         except (TypeError, AttributeError) as errors:
                             continue
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
-                                sadoo = [cve, link.get('href')]
-                                github_issue_patcher(tuple(sadoo))
+                                candidate_patch = [cve, link.get('href')]
+                                github_issue_patcher(tuple(candidate_patch))
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
-                                sadoo = [cve, link.get('href') + '.diff']
-                                patch_links.append(tuple(sadoo))
+                                patch = [cve, link.get('href') + '.diff']
+                                patch_links.append(tuple(patch))
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
-                                sadoo = [cve, link.get('href')]
-                                gitlab_commit_patcher(tuple(sadoo))
+                                candidate_patch = [cve, link.get('href')]
+                                gitlab_commit_patcher(tuple(candidate_patch))
                             elif 'git.' in check_link[1][:4]:
-                                sadoo = [cve, link.get('href')]
-                                dot_git_patcher(tuple(sadoo))
+                                candidate_patch = [cve, link.get('href')]
+                                dot_git_patcher(tuple(candidate_patch))
                             elif 'bugs.' in check_link[1][:5]:
-                                sadoo = [cve, link.get('href')]
-                                bugzilla_patcher(tuple(sadoo))
+                                candidate_patch = [cve, link.get('href')]
+                                bugzilla_patcher(tuple(candidate_patch))
                             else:
                                 pass
                     output = 1
@@ -183,7 +184,7 @@ for cve in vulnerabilities:
                     continue
 
     if output == 0:
-        # print("No info on package vulnerability status")
+        not_patched.append(package_name + ' - ' + 'No patch found')
         pass
     # a = input()
 browser.close()
