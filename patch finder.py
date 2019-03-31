@@ -80,8 +80,6 @@ def bugzilla_patcher(bug_url):
         attach_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
     except TypeError:
         return
-    #print('bugzilla' + '\n' + browser.get_url())
-    #print(attach_check)
     if attach_check is not None:
         plink = attach_check.find('a').get('href')
         patch_link = urljoin(browser.get_url(), plink)
