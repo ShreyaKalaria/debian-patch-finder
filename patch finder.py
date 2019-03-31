@@ -12,7 +12,7 @@ import getopt
 def github_issue_patcher(issue_url):
     global browser
     global patch_links
-    browser.open(issue_url[1])
+    browser.open(issue_url[2])
     if browser.get_current_page().find('div', {
         "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
             'span', {"class": "State State--red"}) is not None:
@@ -26,8 +26,8 @@ def github_issue_patcher(issue_url):
             if greenlit is None:
                 continue
             else:
-                patch_link = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
-                issue_patch = [issue_url[0], patch_link + '.diff']
+                patch_link = urljoin(issue_url[2], commit.find('a', {"class": "commit-id"}).get('href'))
+                issue_patch = [issue_url[0], issue_url[1], patch_link + '.diff']
                 patch_links.append(tuple(issue_patch))
     return
 
@@ -35,12 +35,12 @@ def github_issue_patcher(issue_url):
 def dot_git_patcher(issue_url):
     global browser
     global patch_links
-    browser.open(issue_url[1])
+    browser.open(issue_url[2])
     page_links = browser.get_current_page().find_all('a')
     for candidate_link in page_links:
         if candidate_link.text == 'patch':
-            patch_link = urljoin(issue_url[1], candidate_link.get('href'))
-            issue_patch = [issue_url[0], patch_link]
+            patch_link = urljoin(issue_url[2], candidate_link.get('href'))
+            issue_patch = [issue_url[0], issue_url[1], patch_link]
             patch_links.append(tuple(issue_patch))
         else:
             continue
@@ -50,9 +50,9 @@ def dot_git_patcher(issue_url):
 def gitlab_commit_patcher(commit_url):
     global browser
     global patch_links
-    browser.open(commit_url[1])
+    browser.open(commit_url[2])
     if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
-        issue_patch = [commit_url[0], commit_url[1] + '.diff']
+        issue_patch = [commit_url[0], commit_url[1], commit_url[2] + '.diff']
         patch_links.append(tuple(issue_patch))
     else:
         pass
@@ -62,7 +62,7 @@ def gitlab_commit_patcher(commit_url):
 def bugzilla_patcher(bug_url):
     global browser
     global patch_links
-    browser.open(bug_url[1])
+    browser.open(bug_url[2])
     patch_header_candidate = browser.get_current_page().find_all('h2')
     for header in patch_header_candidate:
         if header.text == 'Patches':
@@ -73,7 +73,7 @@ def bugzilla_patcher(bug_url):
                 continue
             if active_patch_check != 'Add a Patch':
                 patch_link = urljoin(browser.get_url(), candidate_patch.get('href'))
-                bug_patch = [bug_url[0], patch_link]
+                bug_patch = [bug_url[0], bug_url[1], patch_link]
                 patch_links.append(tuple(bug_patch))
                 return
     try:
@@ -82,7 +82,7 @@ def bugzilla_patcher(bug_url):
         return
     if attachment_check is not None:
         patch_link = urljoin(browser.get_url(), attachment_check.find('a').get('href'))
-        bug_patch = [bug_url[0], patch_link]
+        bug_patch = [bug_url[0], bug_url[1], patch_link]
         patch_links.append(tuple(bug_patch))
     return
 
