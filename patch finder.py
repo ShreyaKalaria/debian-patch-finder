@@ -5,8 +5,8 @@ import wget
 import mechanicalsoup
 import os
 from urllib.parse import urljoin, urlsplit
-import sys
-import getopt
+# import sys
+# import getopt
 
 
 def github_issue_patcher(issue_url):
@@ -106,28 +106,46 @@ def download_patches(patches):
     return
 
 
-if not (os.path.exists('/tmp/patch-finder/')):
-    os.mkdir('/tmp/patch-finder/')
-    wget.download(
-        'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-        out='/tmp/patch-finder/cve_list')
-else:
-    if not (os.path.exists('/tmp/patch-finder/cve_list')):
+def create_backtrack():
+    check_latest_entry = open('/tmp/patch-finder/cve_list', 'r')
+    latest_entry = check_latest_entry.readline().split(' ')[0]
+    check_latest_entry.close()
+    write_latest_entry = open('/tmp/patch-finder/last_cve_entry.txt', 'w')
+    write_latest_entry.write(latest_entry)
+    write_latest_entry.close()
+
+
+def check_directories():
+    if not (os.path.exists('/tmp/patch-finder/')):
+        os.mkdir('/tmp/patch-finder/')
         wget.download(
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
+        create_backtrack()
+
+    else:
+        if not (os.path.exists('/tmp/patch-finder/cve_list')):
+            wget.download(
+                'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                out='/tmp/patch-finder/cve_list')
+            create_backtrack()
+    return
+
+
+check_directories()
+
+cve_entries_to_check = []
+possible_cve_entries = []
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
-cve_entries_to_check = []
-possible_cve_entries = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
-distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
+distribution = str(input("\nEnter the distribution(jessie to sid):\n"))
 if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/')):
     os.mkdir('/tmp/patch-finder/' + str(distribution) + '/')
 query_str = 'CVE-'+year_vln
-print("Searching entries matching pattern: " + query_str)
+print("Searching entries matching pattern: " + query_str + " for Debian " + str(distribution))
 
 for line in cve_list:
     if line.startswith(query_str):
