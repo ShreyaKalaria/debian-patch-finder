@@ -93,15 +93,15 @@ def download_patches(patches):
             os.mkdir('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             # print(patch[0] + ' - ' + patch[1][-14:])
-            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
         elif patch[2][-5:] == '.diff':
             # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
         else:
             # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
-            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
     return
 
@@ -124,7 +124,8 @@ cve_entries_to_check = []
 possible_cve_entries = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
-os.mkdir('/tmp/patch-finder/' + str(distribution) + '/')
+if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/')):
+    os.mkdir('/tmp/patch-finder/' + str(distribution) + '/')
 query_str = 'CVE-'+year_vln
 print("Searching entries matching pattern: " + query_str)
 
@@ -138,7 +139,7 @@ for line in cve_list:
                 cve_entries_to_check.append(str(line.split(' ')[0]))
 
 if len(possible_cve_entries) != 0:
-    future_checks = open('pending_checks.txt', 'w')
+    future_checks = open('/tmp/patch-finder/pending_checks.txt', 'w')
     for entry in possible_cve_entries:
         future_checks.write(str(entry) + '\n')
     future_checks.close()
