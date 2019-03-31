@@ -90,7 +90,7 @@ def bugzilla_patcher(bug_url):
 def download_patches(patches):
     for patch in patches:
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
-            os.mkdir('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')
+            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             # print(patch[0] + ' - ' + patch[1][-14:])
             wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
@@ -106,41 +106,12 @@ def download_patches(patches):
     return
 
 
-def create_backtrack():
-    check_latest_entry = open('/tmp/patch-finder/cve_list', 'r')
-    latest_entry = check_latest_entry.readline().split(' ')[0]
-    check_latest_entry.close()
-    write_latest_entry = open('/tmp/patch-finder/last_cve_entry.txt', 'w')
-    write_latest_entry.write(latest_entry)
-    write_latest_entry.close()
-    return
-
-
-def retrieve_backtrack():
-    find_last_entry = open('/tmp/patch-finder/last_cve_entry.txt', 'r')
-    last_entry = find_last_entry.readline()
-    find_last_entry.close()
-    new_cve_list = open('/tmp/patch-finder/cve_list.new', 'r')
-    updated_cve_list = open('/tmp/patch-finder/cve_list', 'w')
-    for file_line in new_cve_list:
-        if file_line.startswith(last_entry):
-            return
-        else:
-            updated_cve_list.write(file_line)
-    new_cve_list.close()
-    os.remove('/tmp/patch-finder/cve_list.new')
-    updated_cve_list.close()
-    create_backtrack()
-    return
-
-
 def check_directories():
     if not (os.path.exists('/tmp/patch-finder/')):
         os.mkdir('/tmp/patch-finder/')
         wget.download(
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
-        create_backtrack()
         return
 
     else:
@@ -148,20 +119,11 @@ def check_directories():
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                 out='/tmp/patch-finder/cve_list')
-            create_backtrack()
         else:
-            if os.path.exists('/tmp/patch-finder/last_cve_entry.txt'):
-                os.remove('/tmp/patch-finder/cve_list')
-                wget.download(
-                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                    out='/tmp/patch-finder/cve_list.new')
-                retrieve_backtrack()
-            else:
-                os.remove('/tmp/patch-finder/cve_list')
-                wget.download(
-                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                    out='/tmp/patch-finder/cve_list')
-    os.rmdir('/tmp/patch-finder/patches/')
+            os.remove('/tmp/patch-finder/cve_list')
+            wget.download(
+                'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                out='/tmp/patch-finder/cve_list')
     return
 
 
@@ -317,6 +279,6 @@ if confirm_download:
     download_patches(patch_list)
     print("Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
 else:
-    os.remove('/tmp/patch-finder/last_cve_entry.txt')
+    os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
 exit()
