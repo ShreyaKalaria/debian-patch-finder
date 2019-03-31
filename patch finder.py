@@ -3,7 +3,7 @@
 from itertools import islice
 import wget
 import mechanicalsoup
-import os.path
+import os
 from urllib.parse import urljoin, urlsplit
 
 
@@ -17,27 +17,27 @@ def github_issue_patcher(issue_url):
         except TypeError:
             return
         for commit in issue:
-            tmp = commit.find('div', {"class": "commit-ci-status pr-1"})
-            sad = tmp.find('summary', {"class": "text-green"})
-            if sad is None:
+            commit_status = commit.find('div', {"class": "commit-ci-status pr-1"})
+            greenlit = commit_status.find('summary', {"class": "text-green"})
+            if greenlit is None:
                 continue
             else:
-                doo = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
-                patchoo = [issue_url[0], doo + '.diff']
-                patch_links.append(tuple(patchoo))
+                patch_link = urljoin(issue_url[1], commit.find('a', {"class": "commit-id"}).get('href'))
+                issue_patch = [issue_url[0], patch_link + '.diff']
+                patch_links.append(tuple(issue_patch))
     return
 
 
-def gitpage_patcher(issue_url):
+def dot_git_patcher(issue_url):
     global browser
     global patch_links
     browser.open(issue_url[1])
     page_links = browser.get_current_page().find_all('a')
-    for plink in page_links:
-        if plink.text == 'patch':
-            patch_link = urljoin(issue_url[1], plink.get('href'))
-            patchoo = [issue_url[0], patch_link]
-            patch_links.append(tuple(patchoo))
+    for candidate_link in page_links:
+        if candidate_link.text == 'patch':
+            patch_link = urljoin(issue_url[1], candidate_link.get('href'))
+            issue_patch = [issue_url[0], patch_link]
+            patch_links.append(tuple(issue_patch))
         else:
             continue
     return
@@ -156,7 +156,7 @@ for entry in vuln_codes:
                                 gitlab_commit_patcher(tuple(sadoo))
                             elif 'git.' in check_link[1][:4]:
                                 sadoo = [entry, link.get('href')]
-                                gitpage_patcher(tuple(sadoo))
+                                dot_git_patcher(tuple(sadoo))
                             elif 'bugs.' in check_link[1][:5]:
                                 sadoo = [entry, link.get('href')]
                                 bugzilla_patcher(tuple(sadoo))
