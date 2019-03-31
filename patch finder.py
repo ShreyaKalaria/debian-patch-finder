@@ -163,20 +163,20 @@ for cve in vulnerabilities:
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
-                                candidate_patch = [cve, link.get('href')]
-                                github_issue_patcher(tuple(candidate_patch))
+                                candidate_link = [cve, link.get('href')]
+                                github_issue_patcher(tuple(candidate_link))
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
                                 patch = [cve, link.get('href') + '.diff']
                                 patch_links.append(tuple(patch))
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
-                                candidate_patch = [cve, link.get('href')]
-                                gitlab_commit_patcher(tuple(candidate_patch))
+                                candidate_link = [cve, link.get('href')]
+                                gitlab_commit_patcher(tuple(candidate_link))
                             elif 'git.' in check_link[1][:4]:
-                                candidate_patch = [cve, link.get('href')]
-                                dot_git_patcher(tuple(candidate_patch))
+                                candidate_link = [cve, link.get('href')]
+                                dot_git_patcher(tuple(candidate_link))
                             elif 'bugs.' in check_link[1][:5]:
-                                candidate_patch = [cve, link.get('href')]
-                                bugzilla_patcher(tuple(candidate_patch))
+                                candidate_link = [cve, link.get('href')]
+                                bugzilla_patcher(tuple(candidate_link))
                             else:
                                 pass
                     output = 1
