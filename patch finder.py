@@ -3,16 +3,19 @@
 from itertools import islice
 import wget
 import mechanicalsoup
-import os.mkdir
-import os.path
+import os
 from urllib.parse import urljoin, urlsplit
+import sys
+import getopt
 
 
 def github_issue_patcher(issue_url):
     global browser
     global patch_links
     browser.open(issue_url[1])
-    if browser.get_current_page().find('div', {"class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find('span', {"class": "State State--red"}) is not None:
+    if browser.get_current_page().find('div', {
+        "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
+            'span', {"class": "State State--red"}) is not None:
         try:
             issue = browser.get_current_page().find_all("div", {"class": "timeline-commits"})
         except TypeError:
@@ -84,7 +87,6 @@ def bugzilla_patcher(bug_url):
     return
 
 
-
 patch_links = []
 
 if not (os.path.exists('/tmp/patch-finder/')):
@@ -99,7 +101,8 @@ else:
             out='/tmp/patch-finder/cve_list')
 
 cve_list = open('/tmp/cve_list', 'r')
-reject_entry = ['RESERVED', 'REJECTED', 'NOT-FOR-US', 'TODO']
+reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
+recheck_entry = ['RESERVED', 'TODO']
 vulns = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
@@ -122,7 +125,7 @@ for entry in vuln_codes:
     try:
         vuln_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
-       # print("No info on package vulnerability status")
+        # print("No info on package vulnerability status")
         continue
     source = (((vuln_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
@@ -168,7 +171,7 @@ for entry in vuln_codes:
                     output = 1
 
     if output == 0:
-       # print("No info on package vulnerability status")
+        # print("No info on package vulnerability status")
         pass
     # a = input()
 browser.close()
@@ -177,15 +180,14 @@ confirm_download = input("Press any key to start downloading")
 for patch in patches:
     if patch[1][-6:] == '.patch':
         print(patch[0] + ' - ' + patch[1][-14:])
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0]+' - ' + patch[1][-14:])
+        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                    + patch[0]+' - ' + patch[1][-14:])
     elif patch[1][-5:] == '.diff':
         print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                    + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
     else:
         print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
-        wget.download(patch[1], out='/tmp/' + distribution + '_patches - ' + patch[0]+' - ' + patch[1][-8:] + '.patch')
-
-
-
-
-
+        wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
+                                    + patch[0]+' - ' + patch[1][-8:] + '.patch')
+exit()
