@@ -37,9 +37,9 @@ def dot_git_patcher(issue_url):
     global patch_links
     browser.open(issue_url[1])
     page_links = browser.get_current_page().find_all('a')
-    for candidate_link in page_links:
-        if candidate_link.text == 'patch':
-            patch_link = urljoin(issue_url[1], candidate_link.get('href'))
+    for candidate_patch_link in page_links:
+        if candidate_patch_link.text == 'patch':
+            patch_link = urljoin(issue_url[1], candidate_patch_link.get('href'))
             issue_patch = [issue_url[0], patch_link]
             patch_links.append(tuple(issue_patch))
         else:
@@ -85,8 +85,6 @@ def bugzilla_patcher(bug_url):
         bug_patch = [bug_url[0], patch_link]
         patch_links.append(tuple(bug_patch))
     return
-
-
 
 
 if not (os.path.exists('/tmp/patch-finder/')):
