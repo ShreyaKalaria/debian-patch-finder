@@ -139,7 +139,7 @@ for cve in vulnerabilities:
     except IndexError:
         # print("No info on package vulnerability status")
         continue
-    source = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
+    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vulnerability_status:
         columns = row.select('td')
@@ -148,8 +148,11 @@ for cve in vulnerabilities:
             parsed_array.append(column.text)
         if len(parsed_array) == 4:
                 if distribution in parsed_array[1]:
+                    '''print("Source package " + source + " (version " + parsed_array[2] + ")" + " is " + parsed_array[3
+                    ]+ " (" + entry + ")" + " in " + parsed_array[1])
+                    '''
                     if parsed_array[3] == 'fixed':
-                        fixed_from_source.append(str(source) + ' - ' + str(parsed_array[2]))
+                        fixed_from_source.append(str(package_name) + ' - ' + str(parsed_array[2]))
                     else:
                         try:
                             vuln_notes = browser.get_current_page().find('pre')
@@ -159,19 +162,19 @@ for cve in vulnerabilities:
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
-                                sadoo = [entry, link.get('href')]
+                                sadoo = [cve, link.get('href')]
                                 github_issue_patcher(tuple(sadoo))
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
-                                sadoo = [entry, link.get('href') + '.diff']
+                                sadoo = [cve, link.get('href') + '.diff']
                                 patch_links.append(tuple(sadoo))
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
-                                sadoo = [entry, link.get('href')]
+                                sadoo = [cve, link.get('href')]
                                 gitlab_commit_patcher(tuple(sadoo))
                             elif 'git.' in check_link[1][:4]:
-                                sadoo = [entry, link.get('href')]
+                                sadoo = [cve, link.get('href')]
                                 dot_git_patcher(tuple(sadoo))
                             elif 'bugs.' in check_link[1][:5]:
-                                sadoo = [entry, link.get('href')]
+                                sadoo = [cve, link.get('href')]
                                 bugzilla_patcher(tuple(sadoo))
                             else:
                                 pass
