@@ -89,18 +89,20 @@ def bugzilla_patcher(bug_url):
 
 def download_patches(patches):
     for patch in patches:
+        if not (os.path.exists('/tmp/patchfinder/' + str(distribution) + '/' + str(patch[0]) + '/')):
+            os.mkdir('/tmp/patchfinder/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[1][-6:] == '.patch':
             print(patch[0] + ' - ' + patch[1][-14:])
-            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                        + patch[0] + ' - ' + patch[1][-14:])
+            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+                                        + str(patch[0]) + '/' + patch[1][-14:])
         elif patch[1][-5:] == '.diff':
             print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                        + patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+                                        + str(patch[0]) + '/' + patch[1][-13:-5] + '.patch')
         else:
             print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
-            wget.download(patch[1], out='/tmp/' + distribution + '_patches - '
-                                        + patch[0] + ' - ' + patch[1][-8:] + '.patch')
+            wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
+                                        + str(patch[0]) + '/' + patch[1][-8:] + '.patch')
     return
 
 
@@ -122,6 +124,7 @@ cve_entries_to_check = []
 possible_cve_entries = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
+os.mkdir('/tmp/patch-finder/' + str(distribution) + '/')
 query_str = 'CVE-'+year_vln
 print("Searching entries matching pattern: " + query_str)
 
