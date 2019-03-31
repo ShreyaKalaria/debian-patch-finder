@@ -89,19 +89,19 @@ def bugzilla_patcher(bug_url):
 
 def download_patches(patches):
     for patch in patches:
-        if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')):
+        if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             # print(patch[0] + ' - ' + patch[1][-14:])
-            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
         elif patch[2][-5:] == '.diff':
             # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
         else:
             # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
-            wget.download(patch[2], out='/tmp/patch-finder/' + distribution + '/'
+            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
     return
 
@@ -113,6 +113,25 @@ def create_backtrack():
     write_latest_entry = open('/tmp/patch-finder/last_cve_entry.txt', 'w')
     write_latest_entry.write(latest_entry)
     write_latest_entry.close()
+    return
+
+
+def retrieve_backtrack():
+    find_last_entry = open('/tmp/patch-finder/last_cve_entry.txt', 'r')
+    last_entry = find_last_entry.readline()
+    find_last_entry.close()
+    new_cve_list = open('/tmp/patch-finder/cve_list.new', 'r')
+    updated_cve_list = open('/tmp/patch-finder/cve_list', 'w')
+    for line in new_cve_list:
+        if line.startswith(last_entry):
+            return
+        else:
+            updated_cve_list.write(line)
+    new_cve_list.close()
+    os.remove('/tmp/patch-finder/cve_list.new')
+    updated_cve_list.close()
+    create_backtrack()
+    return
 
 
 def check_directories():
@@ -122,6 +141,7 @@ def check_directories():
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
         create_backtrack()
+        return
 
     else:
         if not (os.path.exists('/tmp/patch-finder/cve_list')):
@@ -129,21 +149,37 @@ def check_directories():
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                 out='/tmp/patch-finder/cve_list')
             create_backtrack()
+        else:
+            if os.path.exists('/tmp/patch-finder/last_cve_entry.txt'):
+                os.remove('/tmp/patch-finder/cve_list')
+                wget.download(
+                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                    out='/tmp/patch-finder/cve_list.new')
+                retrieve_backtrack()
+            else:
+                os.remove('/tmp/patch-finder/cve_list')
+                wget.download(
+                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                    out='/tmp/patch-finder/cve_list')
+    os.rmdir('/tmp/patch-finder/patches/')
     return
 
 
-check_directories()
-
+vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
+
+check_directories()
+
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid):\n"))
-if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/')):
-    os.mkdir('/tmp/patch-finder/' + str(distribution) + '/')
+os.mkdir('/tmp/patch-finder/patches/')
+if not (os.path.exists('/tmp/patch-finder/patches' + str(distribution) + '/')):
+    os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/')
 query_str = 'CVE-'+year_vln
 print("Searching entries matching pattern: " + query_str + " for Debian " + str(distribution))
 
@@ -159,7 +195,7 @@ for line in cve_list:
 if len(possible_cve_entries) != 0:
     future_checks = open('/tmp/patch-finder/pending_checks.txt', 'w')
     for entry in possible_cve_entries:
-        future_checks.write(str(entry) + '\n')
+        future_checks.write(str(entry))
     future_checks.close()
 
 vulnerabilities = list(set(cve_entries_to_check))  # remove duplicate cve entries
