@@ -106,12 +106,12 @@ def download_patches(patches):
 
 if not (os.path.exists('/tmp/patch-finder/')):
     os.mkdir('/tmp/patch-finder/')
-    cve_list_file = wget.download(
+    wget.download(
         'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
         out='/tmp/patch-finder/cve_list')
 else:
     if not (os.path.exists('/tmp/patch-finder/cve_list')):
-        cve_list_file = wget.download(
+        wget.download(
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
 
