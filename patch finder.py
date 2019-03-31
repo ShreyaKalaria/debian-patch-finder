@@ -6,7 +6,7 @@ import mechanicalsoup
 import os
 from urllib.parse import urljoin, urlsplit
 import sys
-# import getopt
+import argparse
 
 
 def github_issue_patcher(issue_url):
@@ -92,21 +92,24 @@ def download_patches(patches):
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
-            # print(patch[0] + ' - ' + patch[1][-14:])
+            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
+                + patch[1] + ' - ' + patch[2][-9:] + '\n')
             try:
                 wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                             + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
             except ValueError:
                 continue
         elif patch[2][-5:] == '.diff':
-            # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
+                  + patch[1] + ' - ' + patch[2][-13:-5] + '.patch' + '\n')
             try:
                 wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                             + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
             except ValueError:
                 continue
         else:
-            # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
+            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
+                  + patch[1] + ' - ' + patch[2][-3:] + '.patch' + '\n')
             try:
                 wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                             + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
@@ -117,7 +120,9 @@ def download_patches(patches):
 
 def check_directories():
     if not (os.path.exists('/tmp/patch-finder/')):
+        print('Setting up directory tree at /tmp/patch-finder/ ...')
         os.mkdir('/tmp/patch-finder/')
+        print('Downloading the CVE entry list...' + '\n')
         wget.download(
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
@@ -125,11 +130,13 @@ def check_directories():
 
     else:
         if not (os.path.exists('/tmp/patch-finder/cve_list')):
+            print('Downloading the CVE entry list...' + '\n')
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                 out='/tmp/patch-finder/cve_list')
         else:
             os.remove('/tmp/patch-finder/cve_list')
+            print('Updating the CVE entry list...' + '\n')
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                 out='/tmp/patch-finder/cve_list')
@@ -164,20 +171,38 @@ vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
 
-check_directories()
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-y', '--year', required=True, help=
+                    'Year of CVE entries to search for')
+parser.add_argument('-d', '--distribution', required=True, help=
+                    'Set the distribution to be scanned for vulnerabilities(jessie to sid)')
+
+args = vars(parser.parse_args())
+
+distribution = args["distribution"]
+year_vln = args["year"]
+
+check_directories()
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
-year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
-distribution = str(input("\nEnter the distribution(jessie to sid):\n"))
-os.mkdir('/tmp/patch-finder/patches/')
-if not (os.path.exists('/tmp/patch-finder/patches' + str(distribution) + '/')):
+if not (os.path.exists('/tmp/patch-finder/patches/')):
+    os.mkdir('/tmp/patch-finder/patches/')
+if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):
     os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/')
 query_str = 'CVE-'+year_vln
-print("Searching entries matching pattern: " + query_str + " for Debian " + str(distribution))
+print('\n' + 'Searching entries matching pattern ' + '"' + query_str + '"'
+      + ' for packages vulnerable in debian ' + str(distribution) + '.')
+start_search = query_yes_no('Continue?')
 
+if not start_search:
+    print('Exiting...')
+    exit()
+
+print('\n' + 'Gathering relevant CVE entries...' + '\n')
 for line in cve_list:
     if line.startswith(query_str):
         check = ''.join(islice(cve_list, 1))
@@ -200,6 +225,7 @@ not_patched = []
 patch_links = []
 browser = mechanicalsoup.StatefulBrowser()  # initialize browser
 
+print('\n' + 'Gathering patches' + '\n')
 for cve in vulnerabilities:
     url = "https://security-tracker.debian.org/tracker/" + cve
     browser.open(url)
@@ -275,18 +301,19 @@ for cve in vulnerabilities:
         not_patched.append(package_name + ' - ' + 'No patch found')
         pass
 
+unpatched_packages = list(set(not_patched))
 unpatched_report = open('/tmp/patch-finder/patches/unpatched_report.txt', 'w')
-for entry in not_patched:
+for entry in unpatched_packages:
     unpatched_report.write(entry + '\n')
 unpatched_report.close()
 
 browser.close()
 patch_list = list(set(patch_links))  # remove duplicate patches
-print("Found " + str(len(patch_list)) + " patches available." + '\n')
+print("There are " + str(len(patch_list)) + " patches available." + '\n')
 confirm_download = query_yes_no('Download patches?')
 if confirm_download:
     download_patches(patch_list)
-    print("Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
+    print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
 else:
     os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
