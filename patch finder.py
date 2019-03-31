@@ -93,7 +93,7 @@ def download_patches(patches):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
-                + patch[1] + ' - ' + patch[2][-9:] + '\n')
+                    + patch[1] + ' - ' + patch[2][-9:] + '\n')
             try:
                 wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                             + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
@@ -174,10 +174,10 @@ possible_cve_entries = []
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-y', '--year', required=True, help=
-                    'Year of CVE entries to search for')
-parser.add_argument('-d', '--distribution', required=True, help=
-                    'Set the distribution to be scanned for vulnerabilities(jessie to sid)')
+parser.add_argument('-y', '--year', required=True,
+                    help='Year of CVE entries to search for')
+parser.add_argument('-d', '--distribution', required=True,
+                    help='Set the distribution to be scanned for vulnerabilities(jessie to sid)')
 
 args = vars(parser.parse_args())
 
