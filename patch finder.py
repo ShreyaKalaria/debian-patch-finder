@@ -93,16 +93,25 @@ def download_patches(patches):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             # print(patch[0] + ' - ' + patch[1][-14:])
-            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
+            try:
+                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
+                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
+            except ValueError:
+                continue
         elif patch[2][-5:] == '.diff':
             # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
-            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
+            try:
+                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
+                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
+            except ValueError:
+                continue
         else:
             # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
-            wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
+            try:
+                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
+                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
+            except ValueError:
+                continue
     return
 
 
