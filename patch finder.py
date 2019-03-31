@@ -92,8 +92,8 @@ def download_patches(patches):
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
-            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
-                    + patch[1] + ' - ' + patch[2][-9:] + '\n')
+            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
+                  + ' - ' + patch[2][-9:] + '\n')
             try:
                 wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
                                             + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
