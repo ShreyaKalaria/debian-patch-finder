@@ -91,18 +91,18 @@ def download_patches(patches):
     for patch in patches:
         if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')
-        if patch[1][-6:] == '.patch':
+        if patch[2][-6:] == '.patch':
             # print(patch[0] + ' - ' + patch[1][-14:])
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1][-9:])
-        elif patch[1][-5:] == '.diff':
+                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
+        elif patch[2][-5:] == '.diff':
             # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1][-13:-5] + '.patch')
+                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
         else:
             # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1][-3:] + '.patch')
+                                        + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
     return
 
 
@@ -181,20 +181,40 @@ for cve in vulnerabilities:
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
-                                candidate_details = [cve, link.get('href')]
+
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href')]
+
                                 github_issue_patcher(tuple(candidate_details))
+
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
-                                candidate_details = [cve, link.get('href') + '.diff']
+
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href') + '.diff']
+
                                 patch_links.append(tuple(candidate_details))
+
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
-                                candidate_details = [cve, link.get('href')]
+
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href')]
+
                                 gitlab_commit_patcher(tuple(candidate_details))
+
                             elif 'git.' in check_link[1][:4]:
-                                candidate_details = [cve, link.get('href')]
+
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href')]
+
                                 dot_git_patcher(tuple(candidate_details))
+
                             elif 'bugs.' in check_link[1][:5]:
-                                candidate_details = [cve, link.get('href')]
+
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href')]
+
                                 bugzilla_patcher(tuple(candidate_details))
+
                             else:
                                 pass
                     output = 1
