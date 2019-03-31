@@ -33,9 +33,9 @@ def gitpage_patcher(issue_url):
     global patch_links
     browser.open(issue_url[1])
     page_links = browser.get_current_page().find_all('a')
-    for link in page_links:
-        if link.text == 'patch':
-            patch_link = urljoin(issue_url[1], link.get('href'))
+    for plink in page_links:
+        if plink.text == 'patch':
+            patch_link = urljoin(issue_url[1], plink.get('href'))
             patchoo = [issue_url[0], patch_link]
             patch_links.append(tuple(patchoo))
         else:
