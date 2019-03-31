@@ -48,8 +48,8 @@ def gitlab_commit_patcher(commit_url):
     global patch_links
     browser.open(commit_url[1])
     if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
-        patchoo = [commit_url[0], browser.get_url() + '.diff']
-        patch_links.append(tuple(patchoo))
+        issue_patch = [commit_url[0], commit_url[1] + '.diff']
+        patch_links.append(tuple(issue_patch))
     else:
         pass
     return
@@ -59,37 +59,33 @@ def bugzilla_patcher(bug_url):
     global browser
     global patch_links
     browser.open(bug_url[1])
-    try:
-        patch_check = browser.get_current_page().find_all('h2')
-    except TypeError:
-        return
-    for head in patch_check:
-        if head.text == 'Patches':
-            act_patch = head.find_next_sibling().find('a')
+    patch_header_candidate = browser.get_current_page().find_all('h2')
+    for header in patch_header_candidate:
+        if header.text == 'Patches':
+            candidate_patch = header.find_next_sibling().find('a')
             try:
-                active_patch = act_patch.text
+                active_patch_check = candidate_patch.text
             except AttributeError:
-                return
-            if active_patch != 'Add a Patch':
-                plink = act_patch.get('href')
-                patch_link = urljoin(browser.get_url(), plink)
-                patchoo = [bug_url[0], patch_link]
-                patch_links.append(tuple(patchoo))
+                continue
+            if active_patch_check != 'Add a Patch':
+                patch_link = urljoin(browser.get_url(), candidate_patch.get('href'))
+                bug_patch = [bug_url[0], patch_link]
+                patch_links.append(tuple(bug_patch))
                 return
     try:
-        attach_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
+        attachment_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
     except TypeError:
         return
-    if attach_check is not None:
-        plink = attach_check.find('a').get('href')
-        patch_link = urljoin(browser.get_url(), plink)
-        patchoo = [bug_url[0], patch_link]
-        patch_links.append(tuple(patchoo))
+    if attachment_check is not None:
+        patch_link = urljoin(browser.get_url(), attachment_check.find('a').get('href'))
+        bug_patch = [bug_url[0], patch_link]
+        patch_links.append(tuple(bug_patch))
     return
 
 
 
 patch_links = []
+
 if not (os.path.exists('/tmp/cve_list')):
     url = "https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list"
     cve_list_file = wget.download(url, out='/tmp/cve_list')
