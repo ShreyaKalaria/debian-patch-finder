@@ -3,7 +3,8 @@
 from itertools import islice
 import wget
 import mechanicalsoup
-import os
+import os.mkdir
+import os.path
 from urllib.parse import urljoin, urlsplit
 
 
@@ -86,12 +87,18 @@ def bugzilla_patcher(bug_url):
 
 patch_links = []
 
-if not (os.path.exists('/tmp/cve_list')):
-    url = "https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list"
-    cve_list_file = wget.download(url, out='/tmp/cve_list')
-    cve_list = open(cve_list_file, 'r')
+if not (os.path.exists('/tmp/patch-finder/')):
+    os.mkdir('/tmp/patch-finder/')
+    cve_list_file = wget.download(
+        'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+        out='/tmp/patch-finder/cve_list')
 else:
-    cve_list = open('/tmp/cve_list', 'r')
+    if not (os.path.exists('/tmp/patch-finder/cve_list')):
+        cve_list_file = wget.download(
+            'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+            out='/tmp/patch-finder/cve_list')
+
+cve_list = open('/tmp/cve_list', 'r')
 reject_entry = ['RESERVED', 'REJECTED', 'NOT-FOR-US', 'TODO']
 vulns = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
