@@ -37,9 +37,9 @@ def dot_git_patcher(issue_url):
     global patch_links
     browser.open(issue_url[1])
     page_links = browser.get_current_page().find_all('a')
-    for candidate_patch_link in page_links:
-        if candidate_patch_link.text == 'patch':
-            patch_link = urljoin(issue_url[1], candidate_patch_link.get('href'))
+    for candidate_link in page_links:
+        if candidate_link.text == 'patch':
+            patch_link = urljoin(issue_url[1], candidate_link.get('href'))
             issue_patch = [issue_url[0], patch_link]
             patch_links.append(tuple(issue_patch))
         else:
@@ -89,20 +89,20 @@ def bugzilla_patcher(bug_url):
 
 def download_patches(patches):
     for patch in patches:
-        if not (os.path.exists('/tmp/patchfinder/' + str(distribution) + '/' + str(patch[0]) + '/')):
-            os.mkdir('/tmp/patchfinder/' + str(distribution) + '/' + str(patch[0]) + '/')
+        if not (os.path.exists('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')):
+            os.mkdir('/tmp/patch-finder/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[1][-6:] == '.patch':
-            print(patch[0] + ' - ' + patch[1][-14:])
+            # print(patch[0] + ' - ' + patch[1][-14:])
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1][-14:])
+                                        + str(patch[0]) + '/' + patch[1][-9:])
         elif patch[1][-5:] == '.diff':
-            print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
+            # print(patch[0] + ' - ' + patch[1][-13:-5] + '.patch')
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
                                         + str(patch[0]) + '/' + patch[1][-13:-5] + '.patch')
         else:
-            print(patch[0] + ' - ' + patch[1][-6:] + '.patch')
+            # print(patch[0] + ' - ' + patch[1][-3:] + '.patch')
             wget.download(patch[1], out='/tmp/patch-finder/' + distribution + '/'
-                                        + str(patch[0]) + '/' + patch[1][-8:] + '.patch')
+                                        + str(patch[0]) + '/' + patch[1][-3:] + '.patch')
     return
 
 
@@ -181,20 +181,20 @@ for cve in vulnerabilities:
                         for link in noted_links:
                             check_link = urlsplit(link.get('href'))
                             if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
-                                candidate_link = [cve, link.get('href')]
-                                github_issue_patcher(tuple(candidate_link))
+                                candidate_details = [cve, link.get('href')]
+                                github_issue_patcher(tuple(candidate_details))
                             elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
-                                candidate_link = [cve, link.get('href') + '.diff']
-                                patch_links.append(tuple(candidate_link))
+                                candidate_details = [cve, link.get('href') + '.diff']
+                                patch_links.append(tuple(candidate_details))
                             elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
-                                candidate_link = [cve, link.get('href')]
-                                gitlab_commit_patcher(tuple(candidate_link))
+                                candidate_details = [cve, link.get('href')]
+                                gitlab_commit_patcher(tuple(candidate_details))
                             elif 'git.' in check_link[1][:4]:
-                                candidate_link = [cve, link.get('href')]
-                                dot_git_patcher(tuple(candidate_link))
+                                candidate_details = [cve, link.get('href')]
+                                dot_git_patcher(tuple(candidate_details))
                             elif 'bugs.' in check_link[1][:5]:
-                                candidate_link = [cve, link.get('href')]
-                                bugzilla_patcher(tuple(candidate_link))
+                                candidate_details = [cve, link.get('href')]
+                                bugzilla_patcher(tuple(candidate_details))
                             else:
                                 pass
                     output = 1
