@@ -100,10 +100,11 @@ else:
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
             out='/tmp/patch-finder/cve_list')
 
-cve_list = open('/tmp/cve_list', 'r')
+cve_list = open('/tmp/patch-finder/cve_list', 'r')
 reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
-vulns = []
+vulnerabilities = []
+possible_vulnerabilities = []
 year_vln = str(input("Enter the CVE year to query(1999-2019):\n"))
 distribution = str(input("\nEnter the distribution(jessie to sid:\n"))
 query_str = 'CVE-'+year_vln
@@ -112,14 +113,17 @@ print("Searching entries matching pattern: " + query_str)
 for line in cve_list:
     if line.startswith(query_str):
         check = ''.join(islice(cve_list, 1))
-        if all(x not in check for x in reject_entry):
-            vulns.append(str(line.split(' ')[0]))
+        if all(flag not in check for flag in reject_entry):
+            if any(flag in check for flag in recheck_entry):
+                possible_vulnerabilities.append(str(line.split(' ')[0]))
+            else:
+                vulnerabilities.append(str(line.split(' ')[0]))
 
-vuln_codes = list(set(vulns))
+vulnerability_codes = list(set(vulnerabilities))
 fixed_from_source = []
 browser = mechanicalsoup.StatefulBrowser()
-print(len(vuln_codes))
-for entry in vuln_codes:
+print(len(vulnerability_codes))
+for entry in vulnerability_codes:
     url = "https://security-tracker.debian.org/tracker/" + entry
     browser.open(url)
     try:
