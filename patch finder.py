@@ -322,6 +322,8 @@ unpatched_report.close()
 
 browser.close()
 patch_list = list(set(patch_links))  # remove duplicate patches
+fixed_packages = list(set(fixed_from_source))
+print('\n' + len(fixed_packages) + ' packages are fixed in source. update your package manager and run upgrades' + '\n')
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
 confirm_download = query_yes_no('Download patches?')
 if confirm_download:
