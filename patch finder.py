@@ -9,21 +9,21 @@ import sys
 import argparse
 
 
-def github_issue_patcher(issue_url):
+def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
     global browser
     global patch_links
     browser.open(issue_url[2])
     if browser.get_current_page().find('div', {
         "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
-            'span', {"class": "State State--red"}) is not None:
+            'span', {"class": "State State--red"}) is not None:  # if the issue is closed
         try:
-            issue = browser.get_current_page().find_all("div", {"class": "timeline-commits"})
+            issue = browser.get_current_page().find_all("div", {"class": "timeline-commits"})   # find commits, if any
         except TypeError:
             return
         for commit in issue:
             commit_status = commit.find('div', {"class": "commit-ci-status pr-1"})
             greenlit = commit_status.find('summary', {"class": "text-green"})
-            if greenlit is None:
+            if greenlit is None:    # if commit is accepted to the master branch
                 continue
             else:
                 patch_link = urljoin(issue_url[2], commit.find('a', {"class": "commit-id"}).get('href'))
@@ -32,13 +32,13 @@ def github_issue_patcher(issue_url):
     return
 
 
-def dot_git_patcher(issue_url):
+def dot_git_patcher(issue_url):     # extract patch links from pages following the "git.xxxxxx" format
     global browser
     global patch_links
     browser.open(issue_url[2])
-    page_links = browser.get_current_page().find_all('a')
+    page_links = browser.get_current_page().find_all('a')   # gather links in page
     for candidate_link in page_links:
-        if candidate_link.text == 'patch':
+        if candidate_link.text == 'patch':  # pretty self-explanatory
             patch_link = urljoin(issue_url[2], candidate_link.get('href'))
             issue_patch = [issue_url[0], issue_url[1], patch_link]
             patch_links.append(tuple(issue_patch))
@@ -47,11 +47,11 @@ def dot_git_patcher(issue_url):
     return
 
 
-def gitlab_commit_patcher(commit_url):
+def gitlab_commit_patcher(commit_url):  # check if a gitlab commit is greenlit and if so, extract it
     global browser
     global patch_links
     browser.open(commit_url[2])
-    if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:
+    if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:   # if greenlit
         issue_patch = [commit_url[0], commit_url[1], commit_url[2] + '.diff']
         patch_links.append(tuple(issue_patch))
     else:
@@ -59,38 +59,41 @@ def gitlab_commit_patcher(commit_url):
     return
 
 
-def bugzilla_patcher(bug_url):
+def bugzilla_patcher(bug_url):     # extract patch links from pages following the "bugs.xxxxxx" format
     global browser
     global patch_links
     browser.open(bug_url[2])
-    patch_header_candidate = browser.get_current_page().find_all('h2')
+    patch_header_candidate = browser.get_current_page().find_all('h2')  # search for headers
     for header in patch_header_candidate:
-        if header.text == 'Patches':
-            candidate_patch = header.find_next_sibling().find('a')
+        if header.text == 'Patches':    # if there's a patch header
+            candidate_patch = header.find_next_sibling().find('a')  # extract link from patch section
             try:
                 active_patch_check = candidate_patch.text
             except AttributeError:
                 continue
-            if active_patch_check != 'Add a Patch':
+            if active_patch_check != 'Add a Patch':  # if the patch_link is not empty, extract it
                 patch_link = urljoin(browser.get_url(), candidate_patch.get('href'))
                 bug_patch = [bug_url[0], bug_url[1], patch_link]
                 patch_links.append(tuple(bug_patch))
                 return
-    try:
-        attachment_check = browser.get_current_page().find('tr', {"class": "bz_contenttype_text_plain bz_patch"})
-    except TypeError:
+    try:    # some pages actually post patches in an attachment section, so if not patch section is found, try this
+        attachments = browser.get_current_page().find_all('tr', {"class": "bz_contenttype_text_plain bz_patch"})
+        attachment_check = attachments[-1]  # get latest attachment
+    except (TypeError, AttributeError):
         return
-    if attachment_check is not None:
-        patch_link = urljoin(browser.get_url(), attachment_check.find('a').get('href'))
-        bug_patch = [bug_url[0], bug_url[1], patch_link]
-        patch_links.append(tuple(bug_patch))
+    if attachment_check is not None:  # if there is an attachment
+        if attachment_check.text == 'Patch':  # if the attachment is actually the patch, extract it
+            patch_link = urljoin(browser.get_url(), attachment_check.find('a').get('href'))
+            bug_patch = [bug_url[0], bug_url[1], patch_link]
+            patch_links.append(tuple(bug_patch))
+            return
     return
 
 
-def download_patches(patches):
+def download_patches(patches):  # download all extracted patches
     for patch in patches:
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
-            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
+            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')  # dir for each CVE
         if patch[2][-6:] == '.patch':
             print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
                   + ' - ' + patch[2][-9:] + '\n')
@@ -118,32 +121,32 @@ def download_patches(patches):
     return
 
 
-def check_directories():
+def check_directories():    # check if all project directories exist, if not create them
     if not (os.path.exists('/tmp/patch-finder/')):
         print('Setting up directory tree at /tmp/patch-finder/ ...')
         os.mkdir('/tmp/patch-finder/')
         print('Downloading the CVE entry list...' + '\n')
         wget.download(
             'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-            out='/tmp/patch-finder/cve_list')
+            out='/tmp/patch-finder/cve_list')  # get the cve list
         return
 
     else:
-        if not (os.path.exists('/tmp/patch-finder/cve_list')):
+        if not (os.path.exists('/tmp/patch-finder/cve_list')):  # if no cve list is found
             print('Downloading the CVE entry list...' + '\n')
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                out='/tmp/patch-finder/cve_list')
-        else:
+                out='/tmp/patch-finder/cve_list')  # get the cve list
+        else:   # if the cve list exists, remove it so an updated one can be downloaded
             os.remove('/tmp/patch-finder/cve_list')
             print('Updating the CVE entry list...' + '\n')
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                out='/tmp/patch-finder/cve_list')
+                out='/tmp/patch-finder/cve_list')  # get the cve list
     return
 
 
-def query_yes_no(question, default="yes"):
+def query_yes_no(question, default="yes"):  # user input interaction function
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
