@@ -171,6 +171,8 @@ vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
 
+dist_versions = ['jessie', 'stretch', 'buster', 'sid']
+cve_yrs = ['1999', '1998', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019']
 
 parser = argparse.ArgumentParser()
 
@@ -183,6 +185,13 @@ args = vars(parser.parse_args())
 
 distribution = args["distribution"]
 year_vln = args["year"]
+
+if not any(year in year_vln for year in cve_yrs):
+    print('Bad Input!' + '\n' + 'Enter a valid year(1999-2019).' + '\n')
+    exit()
+elif not any(version in distribution for version in dist_versions):
+    print('Bad Input!' + '\n' + 'Enter a distro version(jessie to sid).' + '\n')
+    exit()
 
 check_directories()
 
