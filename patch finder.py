@@ -119,34 +119,44 @@ def bugzilla_patcher(bug_url):     # extract patch links from pages following th
 
 
 def download_patches(patches):  # download all extracted patches
+    downloaded = 0
+    print('\n')
     for patch in patches:
+        downloaded = downloaded + 1
+        print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")  # Display progress
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')  # dir for each CVE
         else:   # avoid downloading conflicts
             shutil.rmtree('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
-            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
-                  + ' - ' + patch[2][-9:] + '\n')
+            # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
+            #       + ' - ' + patch[2][-9:] + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-9:])
+                wget.download(patch[2], out='/tmp/patch-finder/patches/'
+                                            + distribution + '/' + str(patch[0]) + '/'
+                                            + patch[1] + ' - ' + patch[2][-9:])
+                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
             except ValueError:
                 continue
         elif patch[2][-5:] == '.diff':
-            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
-                  + patch[1] + ' - ' + patch[2][-13:-5] + '.patch' + '\n')
+            # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
+            #       + patch[1] + ' - ' + patch[2][-13:-5] + '.patch' + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
+                wget.download(patch[2], out='/tmp/patch-finder/patches/'
+                                            + distribution + '/' + str(patch[0]) + '/'
+                                            + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
+                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
             except ValueError:
                 continue
         else:
-            print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
-                  + patch[1] + ' - ' + patch[2][-3:] + '.patch' + '\n')
+            # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
+            #       + patch[1] + ' - ' + patch[2][-3:] + '.patch' + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/' + distribution + '/'
-                                            + str(patch[0]) + '/' + patch[1] + ' - ' + patch[2][-3:] + '.patch')
+                wget.download(patch[2], out='/tmp/patch-finder/patches/'
+                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + patch[1] + ' - ' + patch[2][-3:] + '.patch')
+                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
             except ValueError:
                 continue
     return
@@ -369,7 +379,6 @@ print('\n' + str(len(fixed_packages))
       + ' packages are fixed in source. update your package manager and run upgrades' + '\n')
 
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
-confirm_download = query_yes_no('Download patches?')
 if query_yes_no('Download patches?'):
     download_patches(patch_list)
     print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
