@@ -135,8 +135,7 @@ def download_patches(patches):  # download all extracted patches
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
             #       + ' - ' + patch[2][-9:] + '\n')
             try:
-
-                with contextlib.redirect_stdout(output_supressor):
+                with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-9:])
@@ -146,8 +145,7 @@ def download_patches(patches):  # download all extracted patches
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
             #       + patch[1] + ' - ' + patch[2][-13:-5] + '.patch' + '\n')
             try:
-
-                with contextlib.redirect_stdout(output_supressor):
+                with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
@@ -157,8 +155,7 @@ def download_patches(patches):  # download all extracted patches
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
             #       + patch[1] + ' - ' + patch[2][-3:] + '.patch' + '\n')
             try:
-
-                with contextlib.redirect_stdout(output_supressor):
+                with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-3:] + '.patch')
@@ -173,7 +170,7 @@ def check_directories():    # check if all project directories exist, if not cre
         print('Setting up directory tree at /tmp/patch-finder/ ...')
         os.mkdir('/tmp/patch-finder/')
         print('Downloading the CVE entry list...' + '\n')
-        with contextlib.redirect_stdout(output_supressor):
+        with contextlib.redirect_stdout(output_supressor):  # supress output
             wget.download(
                 'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                 out='/tmp/patch-finder/cve_list')  # get the cve list
@@ -182,14 +179,14 @@ def check_directories():    # check if all project directories exist, if not cre
     else:
         if not (os.path.exists('/tmp/patch-finder/cve_list')):  # if no cve list is found
             print('Downloading the CVE entry list...' + '\n')
-            with contextlib.redirect_stdout(output_supressor):
+            with contextlib.redirect_stdout(output_supressor):  # supress output
                 wget.download(
                     'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                     out='/tmp/patch-finder/cve_list')  # get the cve list
         else:   # if the cve list exists, remove it so an updated one can be downloaded
             os.remove('/tmp/patch-finder/cve_list')
             print('Updating the CVE entry list...' + '\n')
-            with contextlib.redirect_stdout(output_supressor):
+            with contextlib.redirect_stdout(output_supressor):  # supress output
                 wget.download(
                     'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
                     out='/tmp/patch-finder/cve_list')  # get the cve list
@@ -220,7 +217,7 @@ def query_yes_no(question, default="yes"):  # user input interaction function
                              "(or 'y' or 'n').\n")
 
 
-output_supressor = open('/tmp/patch-finder-io.txt', 'w')
+output_supressor = open('/tmp/patch-finder-io.txt', 'w')  # supress any wget output
 vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
@@ -396,5 +393,5 @@ else:
     os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
 output_supressor.close()
-os.remove('/tmp/patch-finder-io.txt')
+os.remove('/tmp/patch-finder-io.txt')  # clear any leftover output
 exit()
