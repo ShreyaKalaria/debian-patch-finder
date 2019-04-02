@@ -263,6 +263,7 @@ for cve in vulnerabilities:
                 browser.open(url)
                 break
             except (ConnectionError, ConnectionRefusedError):
+                time.sleep(30)
                 continue
         continue
     try:
