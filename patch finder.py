@@ -8,6 +8,7 @@ from urllib.parse import urljoin, urlsplit
 import sys
 import argparse
 import time
+import contextlib
 import shutil
 
 
@@ -119,11 +120,12 @@ def bugzilla_patcher(bug_url):     # extract patch links from pages following th
 
 
 def download_patches(patches):  # download all extracted patches
+    global output_supressor
     downloaded = 0
     print('\n')
     for patch in patches:
         downloaded = downloaded + 1
-        print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")  # Display progress
+        print("Progress: {:2.1%}".format(downloaded / int(len(patches))), end="\r")  # Display progress
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')  # dir for each CVE
         else:   # avoid downloading conflicts
@@ -133,57 +135,64 @@ def download_patches(patches):  # download all extracted patches
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
             #       + ' - ' + patch[2][-9:] + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/'
-                                            + distribution + '/' + str(patch[0]) + '/'
-                                            + patch[1] + ' - ' + patch[2][-9:])
-                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
+
+                with contextlib.redirect_stdout(output_supressor):
+                    wget.download(patch[2], out='/tmp/patch-finder/patches/'
+                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + patch[1] + ' - ' + patch[2][-9:])
             except ValueError:
                 continue
         elif patch[2][-5:] == '.diff':
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
             #       + patch[1] + ' - ' + patch[2][-13:-5] + '.patch' + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/'
-                                            + distribution + '/' + str(patch[0]) + '/'
-                                            + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
-                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
+
+                with contextlib.redirect_stdout(output_supressor):
+                    wget.download(patch[2], out='/tmp/patch-finder/patches/'
+                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
             except ValueError:
                 continue
         else:
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
             #       + patch[1] + ' - ' + patch[2][-3:] + '.patch' + '\n')
             try:
-                wget.download(patch[2], out='/tmp/patch-finder/patches/'
+
+                with contextlib.redirect_stdout(output_supressor):
+                    wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-3:] + '.patch')
-                print("Progress {:2.1%}".format(downloaded / int(len(patches))), end="\r")
             except ValueError:
                 continue
     return
 
 
 def check_directories():    # check if all project directories exist, if not create them
+    global output_supressor
     if not (os.path.exists('/tmp/patch-finder/')):
         print('Setting up directory tree at /tmp/patch-finder/ ...')
         os.mkdir('/tmp/patch-finder/')
         print('Downloading the CVE entry list...' + '\n')
-        wget.download(
-            'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-            out='/tmp/patch-finder/cve_list')  # get the cve list
+        with contextlib.redirect_stdout(output_supressor):
+            wget.download(
+                'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                out='/tmp/patch-finder/cve_list')  # get the cve list
         return
 
     else:
         if not (os.path.exists('/tmp/patch-finder/cve_list')):  # if no cve list is found
             print('Downloading the CVE entry list...' + '\n')
-            wget.download(
-                'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                out='/tmp/patch-finder/cve_list')  # get the cve list
+            with contextlib.redirect_stdout(output_supressor):
+                wget.download(
+                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                    out='/tmp/patch-finder/cve_list')  # get the cve list
         else:   # if the cve list exists, remove it so an updated one can be downloaded
             os.remove('/tmp/patch-finder/cve_list')
             print('Updating the CVE entry list...' + '\n')
-            wget.download(
-                'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
-                out='/tmp/patch-finder/cve_list')  # get the cve list
+            with contextlib.redirect_stdout(output_supressor):
+                wget.download(
+                    'https://salsa.debian.org/security-tracker-team/security-tracker/raw/master/data/CVE/list',
+                    out='/tmp/patch-finder/cve_list')  # get the cve list
     return
 
 
@@ -211,6 +220,7 @@ def query_yes_no(question, default="yes"):  # user input interaction function
                              "(or 'y' or 'n').\n")
 
 
+output_supressor = open('/tmp/patch-finder-io.txt', 'w')
 vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
@@ -294,7 +304,7 @@ print('\n' + 'Gathering patches' + '\n')
 analyzed_entries = 0
 for cve in vulnerabilities:  # for each relevant cve entry
     analyzed_entries = analyzed_entries + 1
-    print("Progress {:2.1%}".format(analyzed_entries / int(len(vulnerabilities))), end="\r")  # Display progress
+    print("Progress: {:2.1%}".format(analyzed_entries / int(len(vulnerabilities))), end="\r")  # Display progress
     url = "https://security-tracker.debian.org/tracker/" + cve  # synthesize corresponding security tracker link
     try_connection(url)
     try:
@@ -385,4 +395,6 @@ if query_yes_no('Download patches?'):
 else:
     os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
+output_supressor.close()
+os.remove('/tmp/patch-finder-io.txt')
 exit()
