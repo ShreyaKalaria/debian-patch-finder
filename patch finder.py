@@ -269,17 +269,7 @@ print('\n' + 'There are ' + str(len(vulnerabilities)) + ' relevant CVE entries, 
 print('\n' + 'Gathering patches' + '\n')
 for cve in vulnerabilities:
     url = "https://security-tracker.debian.org/tracker/" + cve
-    try:
-        browser.open(url)
-    except (ConnectionError, ConnectionRefusedError):
-        time.sleep(30)
-        while True:
-            try:
-                browser.open(url)
-                break
-            except (ConnectionError, ConnectionRefusedError):
-                time.sleep(30)
-                continue
+    try_connection(url)
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
