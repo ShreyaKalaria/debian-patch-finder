@@ -258,6 +258,12 @@ for cve in vulnerabilities:
         browser.open(url)
     except (ConnectionError, ConnectionRefusedError):
         time.sleep(30)
+        while True:
+            try:
+                browser.open(url)
+                break
+            except (ConnectionError, ConnectionRefusedError):
+                continue
         continue
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]
