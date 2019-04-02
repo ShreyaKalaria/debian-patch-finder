@@ -150,7 +150,7 @@ def download_patches(patches):  # download all extracted patches
                 with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(patch[0]) + '/'
-                                                + patch[1] + ' - ' + patch[2][-13:-5] + '.patch')
+                                                + patch[1] + ' - ' + patch[2][-8:-5] + '.patch')
             except ValueError:
                 continue
         else:
