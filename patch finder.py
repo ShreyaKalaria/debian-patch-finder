@@ -13,9 +13,13 @@ def github_issue_patcher(issue_url):    # extract the accepted commits from a gi
     global browser
     global patch_links
     browser.open(issue_url[2])
-    if browser.get_current_page().find('div', {
-        "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
-            'span', {"class": "State State--red"}) is not None:  # if the issue is closed
+    try:
+        issue_closed = browser.get_current_page().find('div', {
+            "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
+            'span', {"class": "State State--red"})
+    except AttributeError:
+        return
+    if issue_closed is not None:  # if the issue is closed
         try:
             issue = browser.get_current_page().find_all("div", {"class": "timeline-commits"})   # find commits, if any
         except TypeError:
@@ -36,7 +40,10 @@ def dot_git_patcher(issue_url):     # extract patch links from pages following t
     global browser
     global patch_links
     browser.open(issue_url[2])
-    page_links = browser.get_current_page().find_all('a')   # gather links in page
+    try:
+        page_links = browser.get_current_page().find_all('a')   # gather links in page
+    except AttributeError:
+        return
     for candidate_link in page_links:
         if candidate_link.text == 'patch':  # pretty self-explanatory
             patch_link = urljoin(issue_url[2], candidate_link.get('href'))
@@ -63,7 +70,10 @@ def bugzilla_patcher(bug_url):     # extract patch links from pages following th
     global browser
     global patch_links
     browser.open(bug_url[2])
-    patch_header_candidate = browser.get_current_page().find_all('h2')  # search for headers
+    try:
+        patch_header_candidate = browser.get_current_page().find_all('h2')  # search for headers
+    except AttributeError:
+        return
     for header in patch_header_candidate:
         if header.text == 'Patches':    # if there's a patch header
             candidate_patch = header.find_next_sibling().find('a')  # extract link from patch section
@@ -79,7 +89,7 @@ def bugzilla_patcher(bug_url):     # extract patch links from pages following th
     try:    # some pages actually post patches in an attachment section, so if not patch section is found, try this
         attachments = browser.get_current_page().find_all('tr', {"class": "bz_contenttype_text_plain bz_patch"})
         attachment_check = attachments[-1]  # get latest attachment
-    except (TypeError, AttributeError):
+    except (TypeError, AttributeError, IndexError):
         return
     if attachment_check is not None:  # if there is an attachment
         if attachment_check.text == 'Patch':  # if the attachment is actually the patch, extract it
@@ -200,8 +210,7 @@ elif not any(version in distribution for version in dist_versions):
 check_directories()
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
-reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
-recheck_entry = ['RESERVED', 'TODO']
+
 if not (os.path.exists('/tmp/patch-finder/patches/')):
     os.mkdir('/tmp/patch-finder/patches/')
 if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):
@@ -209,11 +218,14 @@ if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):
 query_str = 'CVE-'+year_vln
 print('\n' + 'Searching entries matching pattern ' + '"' + query_str + '"'
       + ' for packages vulnerable in debian ' + str(distribution) + '.')
-start_search = query_yes_no('Continue?')
+# start_search = query_yes_no('Continue?')
 
-if not start_search:
+if not query_yes_no('Continue?'):
     print('Exiting...')
     exit()
+
+reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
+recheck_entry = ['RESERVED', 'TODO']
 
 print('\n' + 'Gathering relevant CVE entries...' + '\n')
 for line in cve_list:
@@ -323,10 +335,12 @@ unpatched_report.close()
 browser.close()
 patch_list = list(set(patch_links))  # remove duplicate patches
 fixed_packages = list(set(fixed_from_source))
-print('\n' + len(fixed_packages) + ' packages are fixed in source. update your package manager and run upgrades' + '\n')
+print('\n' + str(len(fixed_packages))
+      + ' packages are fixed in source. update your package manager and run upgrades' + '\n')
+
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
-confirm_download = query_yes_no('Download patches?')
-if confirm_download:
+# confirm_download = query_yes_no('Download patches?')
+if query_yes_no('Download patches?'):
     download_patches(patch_list)
     print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
 else:
