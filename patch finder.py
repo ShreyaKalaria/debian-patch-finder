@@ -9,6 +9,7 @@ import sys
 import argparse
 import time
 
+
 def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
     global browser
     global patch_links
