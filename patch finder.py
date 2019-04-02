@@ -7,7 +7,7 @@ import os
 from urllib.parse import urljoin, urlsplit
 import sys
 import argparse
-
+import time
 
 def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
     global browser
@@ -318,10 +318,10 @@ for cve in vulnerabilities:
 
                             else:
                                 pass
+                            time.sleep(10)
                     output = 1
                 else:
                     continue
-
     if output == 0:
         not_patched.append(package_name + ' - ' + 'No patch found')
         pass
