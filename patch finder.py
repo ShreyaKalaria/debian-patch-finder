@@ -8,19 +8,20 @@ from urllib.parse import urljoin, urlsplit
 import sys
 import argparse
 import time
+import shutil
 
 
 def try_connection(conn_url):   # Attempt to connect to pages and retry if denied
     global browser
     try:
         browser.open(conn_url)
-    except (ConnectionError, ConnectionRefusedError): # if denied, wait and retry until successful
+    except:  # if denied, wait and retry until successful
         time.sleep(30)
         while True:
             try:
                 browser.open(conn_url)
                 break
-            except (ConnectionError, ConnectionRefusedError):
+            except:
                 time.sleep(30)
                 continue
     return
@@ -29,7 +30,7 @@ def try_connection(conn_url):   # Attempt to connect to pages and retry if denie
 def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
     global browser
     global patch_links
-    browser.open(issue_url[2])
+    try_connection(issue_url[2])
     try:
         issue_closed = browser.get_current_page().find('div', {
             "class": "gh-header js-details-container Details js-socket-channel js-updatable-content issue"}).find(
@@ -226,13 +227,18 @@ elif not any(version in distribution for version in dist_versions):
 
 check_directories()     # create directory tree if it doesn't exist
 
+if os.path.exists('/tmp/patch-finder/patches/'):
+    if query_yes_no('\n' + 'Remove previously download patches?'):
+        shutil.rmtree('/tmp/patch-finder/patches/')
+
+
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 
 if not (os.path.exists('/tmp/patch-finder/patches/')):  # make patch dir, if it not exists
     os.mkdir('/tmp/patch-finder/patches/')
 if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):  # make distro dir, it it not exists
     os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/')
-query_str = 'CVE-'+year_vln # create search query
+query_str = 'CVE-'+year_vln  # create search query
 print('\n' + 'Searching entries matching pattern ' + '"' + query_str + '"'
       + ' for packages vulnerable in debian ' + str(distribution) + '.')
 
@@ -275,7 +281,7 @@ for cve in vulnerabilities:  # for each relevant cve entry
     except IndexError:
         not_patched.append(cve + ' - ' + 'No info found for CVE entry')
         continue
-    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")  # extract package name
+    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vulnerability_status:  # check rows for distro version
         columns = row.select('td')
