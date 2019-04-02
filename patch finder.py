@@ -9,6 +9,7 @@ import sys
 import argparse
 import time
 
+
 def try_connection(conn_url):
     global browser
     try:
@@ -356,10 +357,10 @@ print('\n' + str(len(fixed_packages))
 
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
 # confirm_download = query_yes_no('Download patches?')
-#if query_yes_no('Download patches?'):
+# if query_yes_no('Download patches?'):
 download_patches(patch_list)
 print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
-#else:
+# else:
 os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
 exit()
