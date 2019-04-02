@@ -16,6 +16,8 @@ def try_connection(conn_url):   # Attempt to connect to pages and retry if denie
     global browser
     try:
         browser.open(conn_url)
+    except mechanicalsoup.utils.LinkNotFoundError:  # if link is dead
+        return
     except:  # if denied, wait and retry until successful
         time.sleep(30)
         while True:
@@ -295,7 +297,7 @@ vulnerabilities = list(set(cve_entries_to_check))  # remove duplicate cve entrie
 fixed_from_source = []  # initialize fixed-from-source package list
 not_patched = []
 patch_links = []
-browser = mechanicalsoup.StatefulBrowser()  # initialize browser
+browser = mechanicalsoup.StatefulBrowser(raise_on_404=True)  # initialize browser
 print('\n' + 'There are ' + str(len(vulnerabilities)) + ' relevant CVE entries, patching may take a while....' + '\n')
 print('\n' + 'Gathering patches' + '\n')
 analyzed_entries = 0
@@ -306,7 +308,7 @@ for cve in vulnerabilities:  # for each relevant cve entry
     try_connection(url)
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]  # find status table
-    except IndexError:
+    except (IndexError, AttributeError):
         not_patched.append(cve + ' - ' + 'No info found for CVE entry')
         continue
     package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
@@ -363,6 +365,10 @@ for cve in vulnerabilities:  # for each relevant cve entry
 
                                 bugzilla_patcher(tuple(candidate_details))
 
+                            elif '.patch' in check_link[2][-6:]:  # raw patches
+                                candidate_details = [cve, str(package_name) + ' - '
+                                                     + status_entry[2], link.get('href')]
+                                patch_links.append(tuple(candidate_details))
                             else:
                                 pass
                     output = 1
