@@ -122,6 +122,9 @@ def download_patches(patches):  # download all extracted patches
     for patch in patches:
         if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
             os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')  # dir for each CVE
+        else:   # avoid downloading conflicts
+            shutil.rmtree('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
+            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
                   + ' - ' + patch[2][-9:] + '\n')
@@ -228,8 +231,13 @@ elif not any(version in distribution for version in dist_versions):
 check_directories()     # create directory tree if it doesn't exist
 
 if os.path.exists('/tmp/patch-finder/patches/'):
-    if query_yes_no('\n' + 'Remove previously download patches?'):
+    print('\n' + 'Patch directory found.')
+    if query_yes_no('Remove previously downloaded patches?'):
+        print('\n' + 'Removing...')
         shutil.rmtree('/tmp/patch-finder/patches/')
+        print('Removed!' + '\n')
+    else:
+        print('Continuing with existing patch directory tree.' + '\n')
 
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
@@ -273,7 +281,10 @@ patch_links = []
 browser = mechanicalsoup.StatefulBrowser()  # initialize browser
 print('\n' + 'There are ' + str(len(vulnerabilities)) + ' relevant CVE entries, patching may take a while....' + '\n')
 print('\n' + 'Gathering patches' + '\n')
+analyzed_entries = 0
 for cve in vulnerabilities:  # for each relevant cve entry
+    analyzed_entries = analyzed_entries + 1
+    print("Progress {:2.1%}".format(analyzed_entries / int(len(vulnerabilities))), end="\r")  # Display progress
     url = "https://security-tracker.debian.org/tracker/" + cve  # synthesize corresponding security tracker link
     try_connection(url)
     try:
@@ -358,11 +369,11 @@ print('\n' + str(len(fixed_packages))
       + ' packages are fixed in source. update your package manager and run upgrades' + '\n')
 
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
-# confirm_download = query_yes_no('Download patches?')
-# if query_yes_no('Download patches?'):
-download_patches(patch_list)
-print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
-# else:
-os.remove('/tmp/patch-finder/pending_checks.txt')
+confirm_download = query_yes_no('Download patches?')
+if query_yes_no('Download patches?'):
+    download_patches(patch_list)
+    print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
+else:
+    os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
 exit()
