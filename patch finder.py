@@ -10,11 +10,11 @@ import argparse
 import time
 
 
-def try_connection(conn_url):
+def try_connection(conn_url):   # Attempt to connect to pages and retry if denied
     global browser
     try:
         browser.open(conn_url)
-    except (ConnectionError, ConnectionRefusedError):
+    except (ConnectionError, ConnectionRefusedError): # if denied, wait and retry until successful
         time.sleep(30)
         while True:
             try:
@@ -201,41 +201,40 @@ vulnerabilities = []
 cve_entries_to_check = []
 possible_cve_entries = []
 
-dist_versions = ['jessie', 'stretch', 'buster', 'sid']
+dist_versions = ['jessie', 'stretch', 'buster', 'sid']  # eligible distro versions
 cve_yrs = ['1999', '1998', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010',
-           '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019']
+           '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019']  # eligible cve years
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser()  # initialize argument parsing
 
-parser.add_argument('-y', '--year', required=True,
+parser.add_argument('-y', '--year', required=True,  # year arguments
                     help='Year of CVE entries to search for')
-parser.add_argument('-d', '--distribution', required=True,
+parser.add_argument('-d', '--distribution', required=True,  # distro version arguments
                     help='Set the distribution to be scanned for vulnerabilities(jessie to sid)')
 
-args = vars(parser.parse_args())
+args = vars(parser.parse_args())  # parse arguments
 
 distribution = args["distribution"]
 year_vln = args["year"]
 
-if not any(year in year_vln for year in cve_yrs):
+if not any(year in year_vln for year in cve_yrs):  # check input
     print('Bad Input!' + '\n' + 'Enter a valid year(1999-2019).' + '\n')
     exit()
 elif not any(version in distribution for version in dist_versions):
     print('Bad Input!' + '\n' + 'Enter a distro version(jessie to sid).' + '\n')
     exit()
 
-check_directories()
+check_directories()     # create directory tree if it doesn't exist
 
 cve_list = open('/tmp/patch-finder/cve_list', 'r')
 
-if not (os.path.exists('/tmp/patch-finder/patches/')):
+if not (os.path.exists('/tmp/patch-finder/patches/')):  # make patch dir, if it not exists
     os.mkdir('/tmp/patch-finder/patches/')
-if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):
+if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):  # make distro dir, it it not exists
     os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/')
-query_str = 'CVE-'+year_vln
+query_str = 'CVE-'+year_vln # create search query
 print('\n' + 'Searching entries matching pattern ' + '"' + query_str + '"'
       + ' for packages vulnerable in debian ' + str(distribution) + '.')
-# start_search = query_yes_no('Continue?')
 
 if not query_yes_no('Continue?'):
     print('Exiting...')
@@ -245,7 +244,7 @@ reject_entry = ['REJECTED', 'NOT-FOR-US', 'DISPUTED']
 recheck_entry = ['RESERVED', 'TODO']
 
 print('\n' + 'Gathering relevant CVE entries...' + '\n')
-for line in cve_list:
+for line in cve_list:  # check cves
     if line.startswith(query_str):
         check = ''.join(islice(cve_list, 1))
         if all(flag not in check for flag in reject_entry):
@@ -254,7 +253,7 @@ for line in cve_list:
             else:
                 cve_entries_to_check.append(str(line.split(' ')[0]))
 
-if len(possible_cve_entries) != 0:
+if len(possible_cve_entries) != 0:  # if an entry is marked as TODO or RESERVED, mark as to-recheck
     future_checks = open('/tmp/patch-finder/pending_checks.txt', 'w')
     for entry in possible_cve_entries:
         future_checks.write(str(entry))
@@ -268,65 +267,62 @@ patch_links = []
 browser = mechanicalsoup.StatefulBrowser()  # initialize browser
 print('\n' + 'There are ' + str(len(vulnerabilities)) + ' relevant CVE entries, patching may take a while....' + '\n')
 print('\n' + 'Gathering patches' + '\n')
-for cve in vulnerabilities:
-    url = "https://security-tracker.debian.org/tracker/" + cve
+for cve in vulnerabilities:  # for each relevant cve entry
+    url = "https://security-tracker.debian.org/tracker/" + cve  # synthesize corresponding security tracker link
     try_connection(url)
     try:
-        vulnerability_status = browser.get_current_page().find_all("table")[1]
+        vulnerability_status = browser.get_current_page().find_all("table")[1]  # find status table
     except IndexError:
         not_patched.append(cve + ' - ' + 'No info found for CVE entry')
         continue
-    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
+    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")  # extract package name
     output = 0
-    for row in vulnerability_status:
+    for row in vulnerability_status:  # check rows for distro version
         columns = row.select('td')
         status_entry = []
         for column in columns:
             status_entry.append(column.text)
-        if len(status_entry) == 4:
-                if distribution in status_entry[1]:
-                    '''print("Source package " + source + " (version " + parsed_array[2] + ")" + " is " + parsed_array[3
-                    ]+ " (" + entry + ")" + " in " + parsed_array[1])
-                    '''
-                    if status_entry[3] == 'fixed':
+        if len(status_entry) == 4:  # if status row is complete
+                if distribution in status_entry[1]:  # if status row matches the distro version
+                    if status_entry[3] == 'fixed':  # if package is fixed
                         fixed_from_source.append(str(package_name) + ' - ' + str(status_entry[2]))
-                    else:
+                    else:  # else try to find patch links in notes
                         try:
                             entry_notes = browser.get_current_page().find('pre')
                             noted_links = entry_notes.find_all('a')
                         except (TypeError, AttributeError) as errors:
                             continue
-                        for link in noted_links:
-                            check_link = urlsplit(link.get('href'))
-                            if ('github.com' in check_link[1]) and ('issues' in check_link[2]):
+                        for link in noted_links:  # attempt to classify patch link based on link content
+                            check_link = urlsplit(link.get('href'))  # split url
+                            if ('github.com' in check_link[1]) and ('issues' in check_link[2]):  # github issues
 
                                 candidate_details = [cve, str(package_name) + ' - '
                                                      + status_entry[2], link.get('href')]
 
                                 github_issue_patcher(tuple(candidate_details))
 
-                            elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):
+                            elif ('github.com' in check_link[1]) and ('commit' in check_link[2]):  # github commits
 
                                 candidate_details = [cve, str(package_name) + ' - '
                                                      + status_entry[2], link.get('href') + '.diff']
 
                                 patch_links.append(tuple(candidate_details))
 
-                            elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):
+                            elif ('gitlab.' in check_link[1]) and ('commit' in check_link[2]):  # gitlab commits
 
                                 candidate_details = [cve, str(package_name) + ' - '
                                                      + status_entry[2], link.get('href')]
 
                                 gitlab_commit_patcher(tuple(candidate_details))
 
-                            elif 'git.' in check_link[1][:4]:
+                            elif 'git.' in check_link[1][:4]:  # git.xxxx type sites
 
                                 candidate_details = [cve, str(package_name) + ' - '
                                                      + status_entry[2], link.get('href')]
 
                                 dot_git_patcher(tuple(candidate_details))
 
-                            elif 'bugs.' in check_link[1][:5]:
+                            elif 'bugs.' in check_link[1][:5]:  # bugs.xxxxx type sites
 
                                 candidate_details = [cve, str(package_name) + ' - '
                                                      + status_entry[2], link.get('href')]
@@ -335,15 +331,15 @@ for cve in vulnerabilities:
 
                             else:
                                 pass
-                        #    time.sleep(2)
                     output = 1
                 else:
                     continue
+#    time.sleep(2)  # if the connection gets continuously denied, remove this comment to try to cool down between checks
     if output == 0:
         not_patched.append(package_name + ' - ' + 'No patch found')
         pass
 
-unpatched_packages = list(set(not_patched))
+unpatched_packages = list(set(not_patched))  # remove duplicate unpatched entries
 unpatched_report = open('/tmp/patch-finder/patches/unpatched_report.txt', 'w')
 for entry in unpatched_packages:
     unpatched_report.write(entry + '\n')
