@@ -250,11 +250,15 @@ fixed_from_source = []  # initialize fixed-from-source package list
 not_patched = []
 patch_links = []
 browser = mechanicalsoup.StatefulBrowser()  # initialize browser
-
+print('\n' + 'There are ' + str(len(vulnerabilities)) + ' relevant CVE entries, patching may take a while....' + '\n')
 print('\n' + 'Gathering patches' + '\n')
 for cve in vulnerabilities:
     url = "https://security-tracker.debian.org/tracker/" + cve
-    browser.open(url)
+    try:
+        browser.open(url)
+    except (ConnectionError, ConnectionRefusedError):
+        time.sleep(30)
+        continue
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
@@ -319,7 +323,7 @@ for cve in vulnerabilities:
 
                             else:
                                 pass
-                            time.sleep(10)
+                            time.sleep(2)
                     output = 1
                 else:
                     continue
