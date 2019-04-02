@@ -375,7 +375,7 @@ for cve in vulnerabilities:  # for each relevant cve entry
 
 unpatched_packages = list(set(not_patched))  # remove duplicate unpatched entries
 unpatched_report = open('/tmp/patch-finder/patches/unpatched_report.txt', 'w')
-for entry in unpatched_packages:
+for entry in unpatched_packages:    # write all unpatched entries to file
     unpatched_report.write(entry + '\n')
 unpatched_report.close()
 
