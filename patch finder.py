@@ -9,6 +9,21 @@ import sys
 import argparse
 import time
 
+def try_connection(conn_url):
+    global browser
+    try:
+        browser.open(conn_url)
+    except (ConnectionError, ConnectionRefusedError):
+        time.sleep(30)
+        while True:
+            try:
+                browser.open(conn_url)
+                break
+            except (ConnectionError, ConnectionRefusedError):
+                time.sleep(30)
+                continue
+    return
+
 
 def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
     global browser
@@ -40,7 +55,7 @@ def github_issue_patcher(issue_url):    # extract the accepted commits from a gi
 def dot_git_patcher(issue_url):     # extract patch links from pages following the "git.xxxxxx" format
     global browser
     global patch_links
-    browser.open(issue_url[2])
+    try_connection(issue_url[2])
     try:
         page_links = browser.get_current_page().find_all('a')   # gather links in page
     except AttributeError:
@@ -58,7 +73,7 @@ def dot_git_patcher(issue_url):     # extract patch links from pages following t
 def gitlab_commit_patcher(commit_url):  # check if a gitlab commit is greenlit and if so, extract it
     global browser
     global patch_links
-    browser.open(commit_url[2])
+    try_connection(commit_url[2])
     if browser.get_current_page().find('a', {"class": "ci-status-icon-success"}) is not None:   # if greenlit
         issue_patch = [commit_url[0], commit_url[1], commit_url[2] + '.diff']
         patch_links.append(tuple(issue_patch))
@@ -70,7 +85,7 @@ def gitlab_commit_patcher(commit_url):  # check if a gitlab commit is greenlit a
 def bugzilla_patcher(bug_url):     # extract patch links from pages following the "bugs.xxxxxx" format
     global browser
     global patch_links
-    browser.open(bug_url[2])
+    try_connection(bug_url[2])
     try:
         patch_header_candidate = browser.get_current_page().find_all('h2')  # search for headers
     except AttributeError:
@@ -265,7 +280,6 @@ for cve in vulnerabilities:
             except (ConnectionError, ConnectionRefusedError):
                 time.sleep(30)
                 continue
-        continue
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]
     except IndexError:
@@ -330,7 +344,7 @@ for cve in vulnerabilities:
 
                             else:
                                 pass
-                            time.sleep(2)
+                        #    time.sleep(2)
                     output = 1
                 else:
                     continue
@@ -352,10 +366,10 @@ print('\n' + str(len(fixed_packages))
 
 print("There are " + str(len(patch_list)) + " patches available." + '\n')
 # confirm_download = query_yes_no('Download patches?')
-if query_yes_no('Download patches?'):
-    download_patches(patch_list)
-    print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
-else:
-    os.remove('/tmp/patch-finder/pending_checks.txt')
+#if query_yes_no('Download patches?'):
+download_patches(patch_list)
+print('\n' + "Patches successfully downloaded. Check /tmp/patch-finder/patches/ for more details." + '\n')
+#else:
+os.remove('/tmp/patch-finder/pending_checks.txt')
 print('Exiting...' + '\n')
 exit()
