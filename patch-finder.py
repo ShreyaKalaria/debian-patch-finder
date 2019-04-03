@@ -11,13 +11,14 @@ import argparse
 import time
 import contextlib
 import shutil
+from urllib3.exceptions import NewConnectionError, MaxRetryError, ConnectTimeoutError, ConnectionError
 
 
 def try_connection(conn_url):   # Attempt to connect to pages and retry if denied
     global browser
     try:
         browser.open(conn_url)
-    except (mechanicalsoup.utils.LinkNotFoundError, ConnectionError):  # if link is dead
+    except (mechanicalsoup.utils.LinkNotFoundError, NewConnectionError, MaxRetryError, ConnectTimeoutError):  # dead lnk
         return False
     except:  # if denied, wait and retry until successful
         time.sleep(30)
