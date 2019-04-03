@@ -11,7 +11,7 @@ import argparse
 import time
 import contextlib
 import shutil
-from urllib3.exceptions import NewConnectionError, MaxRetryError, ConnectTimeoutError, ConnectionError
+from urllib3.exceptions import NewConnectionError, MaxRetryError
 from requests.exceptions import RequestException
 
 
