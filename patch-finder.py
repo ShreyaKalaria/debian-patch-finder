@@ -17,8 +17,8 @@ def try_connection(conn_url):   # Attempt to connect to pages and retry if denie
     global browser
     try:
         browser.open(conn_url)
-    except mechanicalsoup.utils.LinkNotFoundError:  # if link is dead
-        return
+    except (mechanicalsoup.utils.LinkNotFoundError, ConnectionError):  # if link is dead
+        return False
     except:  # if denied, wait and retry until successful
         time.sleep(30)
         while True:
@@ -28,7 +28,7 @@ def try_connection(conn_url):   # Attempt to connect to pages and retry if denie
             except:
                 time.sleep(30)
                 continue
-    return
+    return True
 
 
 def github_issue_patcher(issue_url):    # extract the accepted commits from a github issue page
@@ -312,7 +312,8 @@ for cve in vulnerabilities:  # for each relevant cve entry
     analyzed_entries = analyzed_entries + 1
     print("Progress: {:2.1%}".format(analyzed_entries / int(len(vulnerabilities))), end="\r")  # Display progress
     url = "https://security-tracker.debian.org/tracker/" + cve  # synthesize corresponding security tracker link
-    try_connection(url)
+    if not try_connection(url):
+        continue
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]  # find status table
         package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
