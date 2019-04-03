@@ -19,8 +19,7 @@ def try_connection(conn_url):   # Attempt to connect to pages and retry if denie
     global browser
     try:
         browser.open(conn_url)
-    except (mechanicalsoup.utils.LinkNotFoundError, NewConnectionError, MaxRetryError, ConnectTimeoutError,
-            RequestException):  # dead lnk
+    except (mechanicalsoup.utils.LinkNotFoundError, NewConnectionError, MaxRetryError, RequestException):  # dead lnk
         return False
     except:  # if denied, wait and retry until successful
         time.sleep(30)
