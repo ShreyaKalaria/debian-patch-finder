@@ -4,7 +4,7 @@ from itertools import islice
 import wget
 import mechanicalsoup
 import os
-import urllib
+from urllib.error import URLError, HTTPError
 from urllib.parse import urljoin, urlsplit
 import sys
 import argparse
@@ -148,7 +148,7 @@ def download_patches(patches):  # download all extracted patches
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-9:])
-            except (ValueError, urllib.error.HTTPError):
+            except (ValueError, HTTPError, ConnectionResetError, URLError):
                 continue
         elif patch[2][-5:] == '.diff':
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
@@ -158,7 +158,7 @@ def download_patches(patches):  # download all extracted patches
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-8:-5] + '.patch')
-            except (ValueError, urllib.error.HTTPError):
+            except (ValueError, HTTPError, ConnectionResetError, URLError):
                 continue
         else:
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
@@ -168,7 +168,7 @@ def download_patches(patches):  # download all extracted patches
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
                                                 + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-3:] + '.patch')
-            except (ValueError, urllib.error.HTTPError):
+            except (ValueError, HTTPError, ConnectionResetError, URLError):
                 continue
     return
 
