@@ -4,6 +4,7 @@ from itertools import islice
 import wget
 import mechanicalsoup
 import os
+import urllib
 from urllib.parse import urljoin, urlsplit
 import sys
 import argparse
@@ -128,20 +129,24 @@ def download_patches(patches):  # download all extracted patches
     for patch in patches:
         downloaded = downloaded + 1
         print("Progress: {:2.1%}".format(downloaded / int(len(patches))), end="\r")  # Display progress
-        if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')):
-            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')  # dir for each CVE
+        if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/'
+                               + str(patch[0]) + '/')):
+            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/'
+                     + str(patch[0]) + '/')  # dir for each CVE
         else:   # avoid downloading conflicts
-            shutil.rmtree('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
-            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(patch[0]) + '/')
+            shutil.rmtree('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/'
+                          + str(patch[0]) + '/')
+            os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/'
+                     + str(patch[0]) + '/')
         if patch[2][-6:] == '.patch':
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/' + patch[1]
             #       + ' - ' + patch[2][-9:] + '\n')
             try:
                 with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
-                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-9:])
-            except ValueError:
+            except (ValueError, urllib.error.HTTPError):
                 continue
         elif patch[2][-5:] == '.diff':
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
@@ -149,9 +154,9 @@ def download_patches(patches):  # download all extracted patches
             try:
                 with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
-                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-8:-5] + '.patch')
-            except ValueError:
+            except (ValueError, urllib.error.HTTPError):
                 continue
         else:
             # print('\n' + '/tmp/patch-finder/patches/' + distribution + '/' + str(patch[0]) + '/'
@@ -159,9 +164,9 @@ def download_patches(patches):  # download all extracted patches
             try:
                 with contextlib.redirect_stdout(output_supressor):  # supress output
                     wget.download(patch[2], out='/tmp/patch-finder/patches/'
-                                                + distribution + '/' + str(patch[0]) + '/'
+                                                + distribution + '/' + str(year_vln) + '/' + str(patch[0]) + '/'
                                                 + patch[1] + ' - ' + patch[2][-3:] + '.patch')
-            except ValueError:
+            except (ValueError, urllib.error.HTTPError):
                 continue
     return
 
@@ -265,6 +270,8 @@ if not (os.path.exists('/tmp/patch-finder/patches/')):  # make patch dir, if it 
     os.mkdir('/tmp/patch-finder/patches/')
 if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/')):  # make distro dir, it it not exists
     os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/')
+if not (os.path.exists('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/')):
+    os.mkdir('/tmp/patch-finder/patches/' + str(distribution) + '/' + str(year_vln) + '/')
 query_str = 'CVE-'+year_vln  # create search query
 print('\n' + 'Searching entries matching pattern ' + '"' + query_str + '"'
       + ' for packages vulnerable in debian ' + str(distribution) + '.')
@@ -308,13 +315,17 @@ for cve in vulnerabilities:  # for each relevant cve entry
     try_connection(url)
     try:
         vulnerability_status = browser.get_current_page().find_all("table")[1]  # find status table
+        package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     except (IndexError, AttributeError):
         not_patched.append(cve + ' - ' + 'No info found for CVE entry')
         continue
-    package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
+    # package_name = (((vulnerability_status.select('tr')[1]).select('td')[0]).getText()).replace(" (PTS)", "")
     output = 0
     for row in vulnerability_status:  # check rows for distro version
-        columns = row.select('td')
+        try:
+            columns = row.select('td')
+        except AttributeError:
+            continue
         status_entry = []
         for column in columns:
             status_entry.append(column.text)
