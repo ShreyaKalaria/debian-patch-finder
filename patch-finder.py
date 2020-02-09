@@ -233,7 +233,7 @@ possible_cve_entries = []
 
 dist_versions = ['jessie', 'stretch', 'buster', 'sid']  # eligible distro versions
 cve_yrs = ['1999', '1998', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010',
-           '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019']  # eligible cve years
+           '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020']  # eligible cve years
 
 parser = argparse.ArgumentParser()  # initialize argument parsing
 
